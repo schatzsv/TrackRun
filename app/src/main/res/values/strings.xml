@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">TrackRun</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">%1$d</string>
+    <string name="save">Save</string>
+    <string name="laps_mile">Laps/Mile</string>
+    <string name="count_laps">Count Laps</string>
+    <string name="count_miles">Count Miles</string>
+    <string name="enable_gps">Enable GPS</string>
+    <string name="default_lap_per_mile">13.4</string>
+</resources>
