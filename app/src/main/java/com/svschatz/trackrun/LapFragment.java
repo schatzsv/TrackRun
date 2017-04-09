@@ -62,7 +62,7 @@ public class LapFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.lap_fragment, container, false);
-        Log.d("TrackRunV2", "LapFragment.onCreateView()");
+        Log.d("TrackRun", "LapFragment.onCreateView()");
         lapCountTextView = (TextView) rootView.findViewById(R.id.lapCountTextView);
         elapsedTimeTextView = (TextView) rootView.findViewById(R.id.elapsedTimeTextView);
         mileCountTextView = (TextView) rootView.findViewById(R.id.mileCountTextView);
@@ -80,7 +80,7 @@ public class LapFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        Log.d("TrackRunV2", "LapFragment.onResume()");
+        Log.d("TrackRun", "LapFragment.onResume()");
         mLapsPerMile = MainActivity.mLapsPerMileDouble;
         timerHandler.postDelayed(timerRunnable, 0);
 
@@ -89,12 +89,12 @@ public class LapFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        Log.d("TrackRunV2", "LapFragment.onPause()");
+        Log.d("TrackRun", "LapFragment.onPause()");
         timerHandler.removeCallbacks(timerRunnable);
     }
 
     public void updateLapDisplay() {
-        //Log.d("TrackRunV2", "LapFragment.updateLapDisplay()");
+        //Log.d("TrackRun", "LapFragment.updateLapDisplay()");
 
         lapCountTextView.setText(MainActivity.sw.getStringLapCount());
         if (MainActivity.sw.getState() == Swe.State.RUNNING) {

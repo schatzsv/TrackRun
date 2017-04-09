@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d("TrackRunV2", "MainActivity.onCreate()");
+        Log.d("TrackRun", "MainActivity.onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         b.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("TrackRunV2", "MainActivity.onClick()");
+                Log.d("TrackRun", "MainActivity.onClick()");
                 Button b = (Button) v;
                 if (sw.getState() == Swe.State.RESET) {
                     // Start pressed
@@ -166,19 +166,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Log.d("LAPFRAG", "LapFragment.onSensorChanged()");
+        Log.d("TrackRun", "LapFragment.onSensorChanged()");
         sw.step(System.currentTimeMillis(), event.values[0]);
     }
 
     @Override
     public void onResume() {
-        Log.d("TrackRunV2", "MainActivity.onResume()");
+        Log.d("TrackRun", "MainActivity.onResume()");
         super.onResume();
     }
 
     @Override
     protected void onStop() {
-        Log.d("TrackRunV2", "MainActivity.onStop()");
+        Log.d("TrackRun", "MainActivity.onStop()");
         super.onStop();
 
         //Save state
@@ -233,7 +233,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == UPDATE_SETTINGS_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Log.d("TrackRunV2", "MainActivity.onActivityResult() - RESULT_OK");
+                Log.d("TrackRun", "MainActivity.onActivityResult() - RESULT_OK");
                 mLapsPerMileString = data.getStringExtra("LAPS_PER_MILE");
                 mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);
                 mCountLaps = data.getBooleanExtra("COUNT_LAPS", true);
@@ -301,7 +301,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     // my member functions
 
     public void onStopMenu() {
-        Log.d("TrackRunV2", "MainActivity.onStopMenu()");
+        Log.d("TrackRun", "MainActivity.onStopMenu()");
         if (sw.getState() == Swe.State.PAUSE) {
             return; //do nothing if already stopped
         }
@@ -314,7 +314,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     public void onResetMenu() {
-        Log.d("TrackRunV2", "MainActivity.onResetMenu()");
+        Log.d("TrackRun", "MainActivity.onResetMenu()");
         //if running, kill timer
         if (sw.getState() == Swe.State.RUNNING) {
             timerHandler.removeCallbacks(timerRunnable);

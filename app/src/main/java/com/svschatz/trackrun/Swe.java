@@ -367,8 +367,19 @@ public class Swe {
         lapTimeAvg = Double.valueOf(m.get("lapTimeAvg"));
         lapMphLast = Double.valueOf(m.get("lapMphLast"));
         lapMphAvg = Double.valueOf(m.get("lapMphAvg"));
-        while (true) {
-            break;
+        laps.clear();
+        int i = 1;
+        int lc = lapCount;
+        String delims = "[,]";
+        while (i <= lc) {
+            String v = m.get("lap," + Integer.toString(i));
+            String[] tokens = v.split(delims);
+            lapCount = Integer.valueOf(tokens[0]);
+            stepsLastLap = Double.valueOf(tokens[1]);
+            lapTimeLast = Long.valueOf(tokens[2]);
+            lapTimeStart= Long.valueOf(tokens[3]);
+            laps.add(new Lap());
+            i++;
         }
         return true;
     }
