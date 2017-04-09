@@ -182,9 +182,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onStop();
 
         //Save state
+        // todo should use internal storage
+        // https://developer.android.com/guide/topics/data/data-storage.html#filesInternal
         Map<String, String> intState = sw.getInternalState();
         SharedPreferences settings = getPreferences(MODE_PRIVATE);
         SharedPreferences.Editor editor = settings.edit();
+        editor.clear();
         Iterator it = intState.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry pair = (Map.Entry) it.next();

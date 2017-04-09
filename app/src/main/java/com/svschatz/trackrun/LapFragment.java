@@ -62,7 +62,7 @@ public class LapFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         rootView = inflater.inflate(R.layout.lap_fragment, container, false);
-        Log.d("TrackRunV2", "LapFragment.onCreate()");
+        Log.d("TrackRunV2", "LapFragment.onCreateView()");
         lapCountTextView = (TextView) rootView.findViewById(R.id.lapCountTextView);
         elapsedTimeTextView = (TextView) rootView.findViewById(R.id.elapsedTimeTextView);
         mileCountTextView = (TextView) rootView.findViewById(R.id.mileCountTextView);

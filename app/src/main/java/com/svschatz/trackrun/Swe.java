@@ -1,5 +1,6 @@
 package com.svschatz.trackrun;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +34,18 @@ public class Swe {
     double lapTimeAvg; //avg lap time in sec
     double lapMphLast; //last lap Mph
     double lapMphAvg; //avg Mph
+    public class Lap {
+        int number;
+        long timeMilli, elapsedTimeMilli;
+        double steps;
+        public Lap() {
+            number = lapCount;
+            timeMilli = lapTimeLast;
+            elapsedTimeMilli = lapTimeStart;
+            steps = stepsLastLap;
+        }
+    }
+    ArrayList<Lap> laps = new ArrayList<Lap>();
 
     public Swe() {
         //System.out.println("Swe()");
@@ -71,6 +84,7 @@ public class Swe {
         lapTimeAvg = 0;
         lapMphLast = 0;
         lapMphAvg = 0;
+        laps.clear();
     }
 
     public void start(long ct) {
@@ -144,6 +158,7 @@ public class Swe {
                 stepsLastLap = stepsCount - stepsLapStart;
                 stepsLapStart = stepsCount;
                 stepsSpmLastLap = stepsLastLap / ((double) lapTimeLast / 1000.0) * 60.0;
+                laps.add(new Lap());
                 break;
             default:
                 break;
@@ -151,7 +166,8 @@ public class Swe {
     }
 
     public String getStringLapCount() {
-        return String.format("La %d", lapCount);
+        //return String.format("La %d", lapCount);
+        return String.format("La %d", laps.size());
     }
 
     public String getStringET(boolean show_ms) {
@@ -261,7 +277,8 @@ public class Swe {
     }
 
     public int getLaps() {
-        return lapCount;
+        //return lapCount;
+        return laps.size();
     }
 
     public double getAvgMph() {
@@ -298,7 +315,7 @@ public class Swe {
 
     public Map<String, String> getInternalState() {
         Map<String, String> m = new HashMap<String, String>();
-        m.put("ver", "0.1");
+        m.put("ver", "0.2");
         m.put("state", Integer.toString(state));
         m.put("et", Long.toString(et));
         m.put("ctLast", Long.toString(ctLast));
@@ -317,12 +334,21 @@ public class Swe {
         m.put("lapTimeAvg", Double.toString(lapTimeAvg));
         m.put("lapMphLast", Double.toString(lapMphLast));
         m.put("lapMphAvg", Double.toString(lapMphAvg));
+        // todo have to add laps ArrayList here
+        for (Lap l : laps) {
+            String v = "";
+            v += Integer.toString(l.number) + ",";
+            v += Double.toString(l.steps) + ",";
+            v += Long.toString(l.timeMilli) + ",";
+            v += Long.toString(l.elapsedTimeMilli);
+            m.put("lap," + Integer.toString(l.number), v);
+        }
         return m;
     }
 
     public boolean setInternalState(Map<String, String> m) {
         if (!m.containsKey("ver")) return false;
-        if (!m.get("ver").contentEquals("0.1")) return false;
+        if (!m.get("ver").contentEquals("0.2")) return false;
         state = Integer.valueOf(m.get("state"));
         et = Long.valueOf(m.get("et"));
         ctLast = Long.valueOf(m.get("ctLast"));
@@ -341,6 +367,9 @@ public class Swe {
         lapTimeAvg = Double.valueOf(m.get("lapTimeAvg"));
         lapMphLast = Double.valueOf(m.get("lapMphLast"));
         lapMphAvg = Double.valueOf(m.get("lapMphAvg"));
+        while (true) {
+            break;
+        }
         return true;
     }
 
