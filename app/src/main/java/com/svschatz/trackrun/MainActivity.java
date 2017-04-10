@@ -9,6 +9,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -23,6 +24,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -185,16 +191,93 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // todo should use internal storage
         // https://developer.android.com/guide/topics/data/data-storage.html#filesInternal
         Map<String, String> intState = sw.getInternalState();
-        SharedPreferences settings = getPreferences(MODE_PRIVATE);
-        SharedPreferences.Editor editor = settings.edit();
-        editor.clear();
-        Iterator it = intState.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            editor.putString((String) pair.getKey(), (String) pair.getValue());
+        try {
+            // is there a storage area that is writable?
+            String state = Environment.getExternalStorageState();
+            if (Environment.MEDIA_MOUNTED.equals(state)) {
+                // get document directory
+                File docDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString());
+                if (!docDir.exists()) {
+                    docDir.mkdir();
+                }
+                File trDir = new File (docDir.getPath(), "TrackRun");
+                if (!trDir.exists()) {
+                    trDir.mkdir();
+                }
+                File stateFile = new File(trDir.getPath(), "state");
+                if (!stateFile.exists()) {
+                    stateFile.createNewFile();
+                }
+            }
         }
-        editor.apply();
+        catch (IOException e) {
+                Log.e("TrackRun", "MainActivity.onStop() createNewFile IO exception");
+        }
+/*
+        if (isExternalStorageWritable()) {
+            // does TrackRun/state exist?
+            File dir = getDataStorageDir("TrackRun");
+            String filePath = dir.getPath()+"/state";
+            File stateFile = new File(filePath);
+            try {
+                stateFile.createNewFile();
+            }
+            catch (IOException e) {
+                Log.d("TrackRun", "MainActivity.onStop() createNewFile IO exception");
+            }
+            if (stateFile.exists()) {
+                // save data
+                FileWriter fw = null;
+                BufferedWriter bw = null;
+                PrintWriter pw = null;
+                try {
+                    fw = new FileWriter(stateFile, false);
+                    bw = new BufferedWriter(fw);
+                    pw = new PrintWriter(bw);
+
+                    pw.println("file stuff");
+
+
+                }
+                catch (IOException e) {
+                    Log.d("TrackRun", "MainActivity.onStop() IO exception");
+                }
+                finally {
+                    if (pw != null) pw.close();
+                }
+            }
+        } else {
+            SharedPreferences settings = getPreferences(MODE_PRIVATE);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.clear();
+            Iterator it = intState.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                editor.putString((String) pair.getKey(), (String) pair.getValue());
+            }
+            editor.apply();
+        }*/
     }
+
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
+    }
+
+    public File getDataStorageDir(String dirName) {
+        // Get the directory for the user's public pictures directory.
+        File file = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOCUMENTS), dirName);
+        if (!file.mkdirs()) {
+            Log.e("TrackRun", "Directory not created");
+        }
+        return file;
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
