@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     boolean mButtonIsGreen = false;
     Button b;
     private SensorManager sensorManager;
+    private boolean mHaveStoragePermission = false;
 
     // my settings
     // todo add these to the saved/restored data
@@ -104,6 +105,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                     MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+        } else {
+            mHaveStoragePermission = true;
         }
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -117,6 +120,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
         // if app was previously running, restore state
+        if (mHaveStoragePermission) {
+            //attempt to get state from file
+        }
         SharedPreferences settings = getPreferences(MODE_PRIVATE);
         Map<String, String> intState = (Map<String, String>) settings.getAll();
         boolean rv = sw.setInternalState(intState);
@@ -191,12 +197,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
                     // permission was granted
+                    mHaveStoragePermission = true;
 
                 } else {
-
                     // permission denied
+                    mHaveStoragePermission = false;
                 }
                 break;
             }
