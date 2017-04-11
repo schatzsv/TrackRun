@@ -1,8 +1,10 @@
 package com.svschatz.trackrun;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -11,9 +13,11 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -52,6 +56,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     // intent codes
     static final int UPDATE_SETTINGS_REQUEST = 1000;
 
+    // permission request codes
+    static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 9090;
+
     // timer
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
@@ -89,6 +96,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Log.d("TrackRun", "MainActivity.onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Check permissions
+        if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+        }
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -168,6 +184,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[],
+                                           int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted
+
+                } else {
+
+                    // permission denied
+                }
+                break;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+    }
+
+    @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) { }
 
     @Override
@@ -198,15 +237,45 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 // get document directory
                 File docDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString());
                 if (!docDir.exists()) {
-                    docDir.mkdir();
+                    Log.d("TrackRun", "MainActivity.onStop() docDir does not exist, attempt create");
+                    if (!docDir.mkdir()) {
+                        Log.d("TrackRun", "MainActivity.onStop() docDir not created");
+                    }
                 }
                 File trDir = new File (docDir.getPath(), "TrackRun");
                 if (!trDir.exists()) {
-                    trDir.mkdir();
+                    Log.d("TrackRun", "MainActivity.onStop() trDir does not exist, attempt create");
+                    if (!trDir.mkdir()) {
+                        Log.d("TrackRun", "MainActivity.onStop() trDir not created");
+                    }
                 }
                 File stateFile = new File(trDir.getPath(), "state");
                 if (!stateFile.exists()) {
-                    stateFile.createNewFile();
+                    Log.d("TrackRun", "MainActivity.onStop() stateFile does not exist, attempt create");
+                    if (!stateFile.createNewFile()) {
+                        Log.d("TrackRun", "MainActivity.onStop() stateFile not created");
+                    }
+                } else {
+                    // have a good state file created, save off state
+                    Log.d("TrackRun", "MainActivity.onStop() write state to stateFile");
+                    FileWriter fw = null;
+                    BufferedWriter bw = null;
+                    PrintWriter pw = null;
+                    try {
+                        fw = new FileWriter(stateFile, false);
+                        bw = new BufferedWriter(fw);
+                        pw = new PrintWriter(bw);
+
+                        pw.println("file stuff");
+
+
+                    }
+                    catch (IOException e) {
+                        Log.d("TrackRun", "MainActivity.onStop() IO exception in write state");
+                    }
+                    finally {
+                        if (pw != null) pw.close();
+                    }
                 }
             }
         }
@@ -258,26 +327,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             editor.apply();
         }*/
     }
-
-    /* Checks if external storage is available for read and write */
-    public boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
-    }
-
-    public File getDataStorageDir(String dirName) {
-        // Get the directory for the user's public pictures directory.
-        File file = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOCUMENTS), dirName);
-        if (!file.mkdirs()) {
-            Log.e("TrackRun", "Directory not created");
-        }
-        return file;
-    }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
