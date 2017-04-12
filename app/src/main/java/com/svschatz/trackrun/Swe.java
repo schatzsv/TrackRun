@@ -337,11 +337,11 @@ public class Swe {
         // todo have to add laps ArrayList here
         for (Lap l : laps) {
             String v = "";
-            v += Integer.toString(l.number) + ",";
-            v += Double.toString(l.steps) + ",";
-            v += Long.toString(l.timeMilli) + ",";
+            v += Integer.toString(l.number) + ":";
+            v += Double.toString(l.steps) + ":";
+            v += Long.toString(l.timeMilli) + ":";
             v += Long.toString(l.elapsedTimeMilli);
-            m.put("lap," + Integer.toString(l.number), v);
+            m.put("lap-" + Integer.toString(l.number), v);
         }
         return m;
     }
@@ -370,9 +370,9 @@ public class Swe {
         laps.clear();
         int i = 1;
         int lc = lapCount;
-        String delims = "[,]";
+        String delims = "[:]";
         while (i <= lc) {
-            String v = m.get("lap," + Integer.toString(i));
+            String v = m.get("lap-" + Integer.toString(i));
             String[] tokens = v.split(delims);
             lapCount = Integer.valueOf(tokens[0]);
             stepsLastLap = Double.valueOf(tokens[1]);

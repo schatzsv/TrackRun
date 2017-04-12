@@ -28,11 +28,14 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -120,13 +123,43 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
         // if app was previously running, restore state
+        Map<String, String> intState = new HashMap<String, String>();
         if (mHaveStoragePermission) {
-            //attempt to get state from file
+            // Verify we have access to public storage area
+            String state = Environment.getExternalStorageState();
+            if (Environment.MEDIA_MOUNTED.equals(state) ||
+                    Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+                File docDir = new File(Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOCUMENTS).toString());
+                File trDir = new File (docDir.getPath(), "TrackRun");
+                File stateFile = new File(trDir.getPath(), "state");
+                try {
+                    BufferedReader br = new BufferedReader(new FileReader(stateFile));
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        Log.d("TrackRun", line);
+                        String[] pr = line.split("[,]");
+                        if (pr.length != 2) {
+                            break;
+                        }
+                        String k = pr[0].replace("\"", "");
+                        String v = pr[1].replace("\"", "");
+                        intState.put(k,v);
+                    }
+                    br.close();
+                    boolean rv = sw.setInternalState(intState);
+                    if (rv) Toast.makeText(this, "Restored state from file",
+                            Toast.LENGTH_LONG).show();
+                }
+                catch (IOException e) {
+                    Log.e("TrackRun", "MainActivity.onCreate " + e.getMessage());
+                }
+            }
         }
-        SharedPreferences settings = getPreferences(MODE_PRIVATE);
-        Map<String, String> intState = (Map<String, String>) settings.getAll();
+        /*SharedPreferences settings = getPreferences(MODE_PRIVATE);
+        intState = (Map<String, String>) settings.getAll();
         boolean rv = sw.setInternalState(intState);
-        if (rv) Toast.makeText(this, "Restored state data", Toast.LENGTH_LONG).show();
+        if (rv) Toast.makeText(this, "Restored state data", Toast.LENGTH_LONG).show();*/
 
         // set up step sensor
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -241,9 +274,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             String state = Environment.getExternalStorageState();
             if (Environment.MEDIA_MOUNTED.equals(state)) {
                 // get document directory
-                File docDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).toString());
+                File docDir = new File(Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_DOCUMENTS).toString());
                 if (!docDir.exists()) {
-                    Log.d("TrackRun", "MainActivity.onStop() docDir does not exist, attempt create");
+                    Log.d("TrackRun",
+                            "MainActivity.onStop() docDir does not exist, attempt create");
                     if (!docDir.mkdir()) {
                         Log.d("TrackRun", "MainActivity.onStop() docDir not created");
                     }
@@ -257,24 +292,32 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
                 File stateFile = new File(trDir.getPath(), "state");
                 if (!stateFile.exists()) {
-                    Log.d("TrackRun", "MainActivity.onStop() stateFile does not exist, attempt create");
+                    Log.d("TrackRun",
+                            "MainActivity.onStop() stateFile does not exist, attempt create");
                     if (!stateFile.createNewFile()) {
                         Log.d("TrackRun", "MainActivity.onStop() stateFile not created");
                     }
                 } else {
                     // have a good state file created, save off state
                     Log.d("TrackRun", "MainActivity.onStop() write state to stateFile");
-                    FileWriter fw = null;
-                    BufferedWriter bw = null;
+                    FileWriter fw;
+                    BufferedWriter bw;
                     PrintWriter pw = null;
                     try {
                         fw = new FileWriter(stateFile, false);
                         bw = new BufferedWriter(fw);
                         pw = new PrintWriter(bw);
 
-                        pw.println("file stuff");
-
-
+                        Iterator it = intState.entrySet().iterator();
+                        while (it.hasNext()) {
+                            Map.Entry pair = (Map.Entry) it.next();
+                            String k = (String) pair.getKey();
+                            String v = (String) pair.getValue();
+                            String line = "\"" + k + "\"" + "," +  "\"" + v + "\"";
+                            //String line = "\"%s\",\"%s\"".format((String) pair.getKey(),  (String) pair.getValue());
+                            Log.d("TrackRun", line);
+                            pw.println(line);
+                        }
                     }
                     catch (IOException e) {
                         Log.d("TrackRun", "MainActivity.onStop() IO exception in write state");
