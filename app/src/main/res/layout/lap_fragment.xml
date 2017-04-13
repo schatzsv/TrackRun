@@ -41,15 +41,15 @@
             android:id="@+id/currentLapTimeTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight=".5"
-            android:text="Lt XX.X"
+            android:layout_weight=".75"
+            android:text="Cl XX:XX:XX"
             android:textSize="40sp" />
 
         <TextView
             android:id="@+id/spare1TextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight=".5"
+            android:layout_weight=".25"
             android:textSize="40sp" />
     </LinearLayout>
 

@@ -156,10 +156,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
             }
         }
-        /*SharedPreferences settings = getPreferences(MODE_PRIVATE);
-        intState = (Map<String, String>) settings.getAll();
-        boolean rv = sw.setInternalState(intState);
-        if (rv) Toast.makeText(this, "Restored state data", Toast.LENGTH_LONG).show();*/
 
         // set up step sensor
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -266,7 +262,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onStop();
 
         //Save state
-        // todo should use internal storage
         // https://developer.android.com/guide/topics/data/data-storage.html#filesInternal
         Map<String, String> intState = sw.getInternalState();
         try {
@@ -314,7 +309,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             String k = (String) pair.getKey();
                             String v = (String) pair.getValue();
                             String line = "\"" + k + "\"" + "," +  "\"" + v + "\"";
-                            //String line = "\"%s\",\"%s\"".format((String) pair.getKey(),  (String) pair.getValue());
                             Log.d("TrackRun", line);
                             pw.println(line);
                         }
@@ -331,50 +325,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         catch (IOException e) {
                 Log.e("TrackRun", "MainActivity.onStop() createNewFile IO exception");
         }
-/*
-        if (isExternalStorageWritable()) {
-            // does TrackRun/state exist?
-            File dir = getDataStorageDir("TrackRun");
-            String filePath = dir.getPath()+"/state";
-            File stateFile = new File(filePath);
-            try {
-                stateFile.createNewFile();
-            }
-            catch (IOException e) {
-                Log.d("TrackRun", "MainActivity.onStop() createNewFile IO exception");
-            }
-            if (stateFile.exists()) {
-                // save data
-                FileWriter fw = null;
-                BufferedWriter bw = null;
-                PrintWriter pw = null;
-                try {
-                    fw = new FileWriter(stateFile, false);
-                    bw = new BufferedWriter(fw);
-                    pw = new PrintWriter(bw);
-
-                    pw.println("file stuff");
-
-
-                }
-                catch (IOException e) {
-                    Log.d("TrackRun", "MainActivity.onStop() IO exception");
-                }
-                finally {
-                    if (pw != null) pw.close();
-                }
-            }
-        } else {
-            SharedPreferences settings = getPreferences(MODE_PRIVATE);
-            SharedPreferences.Editor editor = settings.edit();
-            editor.clear();
-            Iterator it = intState.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry pair = (Map.Entry) it.next();
-                editor.putString((String) pair.getKey(), (String) pair.getValue());
-            }
-            editor.apply();
-        }*/
     }
 
     @Override

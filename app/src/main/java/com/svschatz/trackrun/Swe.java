@@ -206,7 +206,19 @@ public class Swe {
     }
 
     public String getStringCurrentLapTime() {
-        return String.format("Cl %.1f", (et-lapTimeStart) / 1000.0);
+        double lapTimeSecs = (et-lapTimeStart) / 1000.0;
+        if (lapTimeSecs < 59.5) {
+            return String.format("Cl %.1f", lapTimeSecs);
+        } else {
+            int lapHour = (int) Math.floor(lapTimeSecs/3600.0);
+            int lapMin = (int) Math.floor((lapTimeSecs - lapHour*3600.0)/60.0);
+            int lapSec = (int) Math.floor(lapTimeSecs - lapHour*3600.0 - lapMin*60.0);
+            if (lapHour > 0) {
+                return String.format("Cl %d:%02d:%02d", lapHour, lapMin, lapSec);
+            } else {
+                return String.format("Cl %d:%02d", lapMin, lapSec);
+            }
+        }
     }
 
     public String getStringLastLapTime() {
@@ -225,6 +237,9 @@ public class Swe {
     }
 
     public String getStringAvgPace() {
+        if (lapCount == 0) {
+            return "P 0:00";
+        }
         double pace = (et / 60000.0) / (lapCount / mLapsPerMile); //minutes per mile
         int paceMin = (int) Math.floor(pace);
         int paceSec = (int) Math.round(60f * (pace - paceMin));
@@ -253,6 +268,9 @@ public class Swe {
 
     public String getStringAvgStepLength() {
         double sl;
+        if (getLaps() == 0 || stepsLapStart < 1.0) {
+            return "Sl 0.0";
+        }
         sl = 63360.0*getLaps()/mLapsPerMile/stepsLapStart;
         if (sl > 1000.0) {
             sl = 0.0;
@@ -334,7 +352,6 @@ public class Swe {
         m.put("lapTimeAvg", Double.toString(lapTimeAvg));
         m.put("lapMphLast", Double.toString(lapMphLast));
         m.put("lapMphAvg", Double.toString(lapMphAvg));
-        // todo have to add laps ArrayList here
         for (Lap l : laps) {
             String v = "";
             v += Integer.toString(l.number) + ":";
