@@ -48,7 +48,7 @@ public class Swe {
     ArrayList<Lap> laps = new ArrayList<Lap>();
     double gpsLatLast, gpsLonLast, gpsAltLast; //last gps data, alt is meters
     float gpsSpdLast, gpsHdgLast, gpsAccLast; //last gps data, meters/s, deg(0-360), meters
-    long gpsTimeLast = 0; //gps time mS UTC
+    long gpsTimeLast; //gps time mS UTC
     float gpsDistanceRun; //calculated run distance in miles
 
     public Swe() {
@@ -89,6 +89,17 @@ public class Swe {
         lapMphLast = 0;
         lapMphAvg = 0;
         laps.clear();
+
+        //gps related
+        gpsDistanceRun = (float) 0.0;
+        gpsLatLast = 0.0;
+        gpsLonLast = 0.0;
+        gpsAltLast = 0.0;
+        gpsSpdLast = (float) 0.0;
+        gpsHdgLast = (float) 0.0;
+        gpsAccLast = (float) 0.0;
+        gpsTimeLast = 0;
+
     }
 
     public void start(long ct) {
@@ -191,24 +202,17 @@ public class Swe {
                     //double dFt = dKm * 3280.84;
                     gpsDistanceRun += dMi;
                 }
-                gpsLatLast = lat;
-                gpsLonLast = lon;
-                gpsAltLast = alt;
-                gpsSpdLast = spd;
-                gpsHdgLast = hdg;
-                gpsAccLast = acc;
-                gpsTimeLast = time;
                 break;
             default:
-                gpsLatLast = lat;
-                gpsLonLast = lon;
-                gpsAltLast = alt;
-                gpsSpdLast = spd;
-                gpsHdgLast = hdg;
-                gpsAccLast = acc;
-                gpsTimeLast = time;
                 break;
         }
+        gpsLatLast = lat;
+        gpsLonLast = lon;
+        gpsAltLast = alt;
+        gpsSpdLast = spd;
+        gpsHdgLast = hdg;
+        gpsAccLast = acc;
+        gpsTimeLast = time;
     }
 
     public String getStringGpsHeading() {
@@ -216,11 +220,16 @@ public class Swe {
     }
 
     public String getStringGpsSpeed() {
-        return String.format("S %4.1f", gpsSpdLast * 2.23693629);
+        return String.format("Sp %5.2f", gpsSpdLast * 2.23693629);
+    }
+
+    public String getStringAvgGpsSpeed() {
+        double ags = gpsDistanceRun / et * 3600000.0;
+        return String.format("Sav %5.2f", ags);
     }
 
     public String getStringGpsDistanceRun() {
-        return String.format("D %4.1f", gpsDistanceRun);
+        return String.format("D %5.2f", gpsDistanceRun);
     }
 
     public String getStringLapCount() {

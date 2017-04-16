@@ -33,6 +33,13 @@
             android:textSize="48sp" />
 
         <TextView
+            android:id="@+id/avgspeed_tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textSize="48sp" />
+
+        <TextView
             android:id="@+id/gps_dist_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

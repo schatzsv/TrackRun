@@ -21,7 +21,7 @@ public class LocationFragment extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
 
     //my member variables
-    TextView headingTv, speedTv, gpsDistTv;
+    TextView headingTv, speedTv, avgSpeedTv, gpsDistTv;
 /*
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
@@ -56,6 +56,7 @@ public class LocationFragment extends Fragment {
         textView.setText("Location: " + getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
         headingTv = (TextView) rootView.findViewById(R.id.heading_tv);
         speedTv = (TextView) rootView.findViewById(R.id.speed_tv);
+        avgSpeedTv = (TextView) rootView.findViewById(R.id.avgspeed_tv);
         gpsDistTv = (TextView) rootView.findViewById(R.id.gps_dist_tv);
         updateLocationDisplay();
         return rootView;
@@ -64,6 +65,7 @@ public class LocationFragment extends Fragment {
     public void updateLocationDisplay() {
         headingTv.setText(MainActivity.sw.getStringGpsHeading());
         speedTv.setText(MainActivity.sw.getStringGpsSpeed());
+        avgSpeedTv.setText(MainActivity.sw.getStringAvgGpsSpeed());
         gpsDistTv.setText(MainActivity.sw.getStringGpsDistanceRun());
     }
 }
