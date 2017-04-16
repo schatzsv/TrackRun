@@ -264,9 +264,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d(TAG, "onRequestPermissionsResult() - permission granted");
                     mHaveLocationPermission = true;
-                    getLocation();
-                    createLocationRequest();
-                    startLocationUpdates();
+                    if (mEnableGps) {
+                        getLocation();
+                        createLocationRequest();
+                        startLocationUpdates();
+                    }
                 } else {
                     Log.d(TAG, "onRequestPermissionsResult() - permission denied");
                     mHaveLocationPermission = false;
@@ -374,7 +376,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy()");
-        stopLocationUpdates();
+        if (mEnableGps) {
+            stopLocationUpdates();
+        }
         mGoogleApiClient.disconnect();
         super.onDestroy();
     }
@@ -434,6 +438,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     } else {
                         // Enable GPS
                         if (mHaveLocationPermission) {
+                            getLocation();
+                            createLocationRequest();
                             startLocationUpdates();
                             mEnableGps = true;
                         } else {
@@ -521,7 +527,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
         if (mAverageFragment != null){
             mAverageFragment.updateAverageDisplay();
-        }        if (mLocationFragment != null) {
+        }
+        if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
         return;
@@ -546,9 +553,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //avgSPMTextView.setText(String.format("%5.2f", 0.0));
         if (mLapFragment != null) {
             mLapFragment.updateLapDisplay();
-        }        if (mAverageFragment != null){
+        }
+        if (mAverageFragment != null){
             mAverageFragment.updateAverageDisplay();
-        }        if (mLocationFragment != null) {
+        }
+        if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
     }
@@ -588,19 +597,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         if (mHaveLocationPermission) {
-            getLocation();
-            if (mLastLocation != null) {
-                /*
-                mLatitudeText.setText(String.format(Locale.getDefault(), "%s: %f", mLatitudeLabel,
-                        mLastLocation.getLatitude()));
-                mLongitudeText.setText(String.format(Locale.getDefault(), "%s: %f", mLongitudeLabel,
-                        mLastLocation.getLongitude()));
-                */
-            } else {
-                Log.d(TAG, "no last location");
+            if (mEnableGps) {
+                getLocation();
+                createLocationRequest();
+                startLocationUpdates();
             }
-            createLocationRequest();
-            startLocationUpdates();
         }
     }
 
@@ -660,11 +661,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     */
 
     LocationRequest mLocationRequest;
-    protected Location mLastLocation;
-    protected Location mCurrentLocation;
-    protected String mLastUpdateTime;
-    protected int mCountUpdates;
-    protected LinkedList mLocations = new LinkedList();
 
     @Override
     public void onLocationChanged(Location l) {
@@ -674,8 +670,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
-        //logLocation(location);
-        //updateUI();
     }
 
     protected void getLocation() {
@@ -684,8 +678,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Location l = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             sw.gps(l.getLatitude(), l.getLongitude(),l.getAltitude(), l.getSpeed(), l.getBearing(),
                     l.getAccuracy(), l.getTime());
-            //logLocation(l);
-            //updateUI();
         }
         catch (SecurityException e) {
             Log.d(TAG, "getLocation() security exception last location");
@@ -714,6 +706,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     protected void createLocationRequest() {
+        Log.d(TAG, "createLocationRequest()");
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(2000);
         mLocationRequest.setFastestInterval(1000);

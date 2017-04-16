@@ -48,7 +48,7 @@ public class Swe {
     ArrayList<Lap> laps = new ArrayList<Lap>();
     double gpsLatLast, gpsLonLast, gpsAltLast; //last gps data, alt is meters
     float gpsSpdLast, gpsHdgLast, gpsAccLast; //last gps data, meters/s, deg(0-360), meters
-    long gpsTimeLast; //gps time mS UTC
+    long gpsTimeLast = 0; //gps time mS UTC
     float gpsDistanceRun; //calculated run distance in miles
 
     public Swe() {
@@ -173,8 +173,24 @@ public class Swe {
                     float spd, float hdg, float acc, long time) {
         switch (state) {
             case State.RUNNING:
-                //todo Calculate distance run
-                gpsDistanceRun += 0.1;
+                if (gpsTimeLast != 0) {
+                    double lat1, lat2, lon1, lon2;
+                    lat1 = gpsLatLast * Math.PI / 180.0;
+                    lat2 = lat * Math.PI / 180.0;
+                    lon1 = gpsLonLast * Math.PI / 180.0;
+                    lon2 = lon * Math.PI / 180.0;
+
+                    double dLat = lat2 - lat1;
+                    double dLon = lon2 - lon1;
+                    double a = Math.sin(dLat / 2.0) * Math.sin(dLat / 2.0) +
+                            Math.sin(dLon / 2.0) * Math.sin(dLon / 2.0) * Math.cos(lat1) * Math.cos(lat2);
+                    double c = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+                    double earthRadiusKm = 6371.0;
+                    double dKm = earthRadiusKm * c;
+                    double dMi = dKm * 0.621371;
+                    //double dFt = dKm * 3280.84;
+                    gpsDistanceRun += dMi;
+                }
                 gpsLatLast = lat;
                 gpsLonLast = lon;
                 gpsAltLast = alt;
@@ -375,7 +391,7 @@ public class Swe {
 
     public Map<String, String> getInternalState() {
         Map<String, String> m = new HashMap<String, String>();
-        m.put("ver", "0.2");
+        m.put("ver", "0.3");
         m.put("state", Integer.toString(state));
         m.put("et", Long.toString(et));
         m.put("ctLast", Long.toString(ctLast));
@@ -394,6 +410,14 @@ public class Swe {
         m.put("lapTimeAvg", Double.toString(lapTimeAvg));
         m.put("lapMphLast", Double.toString(lapMphLast));
         m.put("lapMphAvg", Double.toString(lapMphAvg));
+        m.put("gpsLatLast", Double.toString(gpsLatLast));
+        m.put("gpsLonLast", Double.toString(gpsLonLast));
+        m.put("gpsAltLast", Double.toString(gpsAltLast));
+        m.put("gpsSpdLast", Float.toString(gpsSpdLast));
+        m.put("gpsHdgLast", Float.toString(gpsHdgLast));
+        m.put("gpsAccLast", Float.toString(gpsAccLast));
+        m.put("gpsTimeLast", Long.toString(gpsTimeLast));
+        m.put("gpsDistanceRun", Float.toString(gpsDistanceRun));
         for (Lap l : laps) {
             String v = "";
             v += Integer.toString(l.number) + ":";
@@ -407,7 +431,7 @@ public class Swe {
 
     public boolean setInternalState(Map<String, String> m) {
         if (!m.containsKey("ver")) return false;
-        if (!m.get("ver").contentEquals("0.2")) return false;
+        if (!m.get("ver").contentEquals("0.3")) return false;
         state = Integer.valueOf(m.get("state"));
         et = Long.valueOf(m.get("et"));
         ctLast = Long.valueOf(m.get("ctLast"));
@@ -426,6 +450,14 @@ public class Swe {
         lapTimeAvg = Double.valueOf(m.get("lapTimeAvg"));
         lapMphLast = Double.valueOf(m.get("lapMphLast"));
         lapMphAvg = Double.valueOf(m.get("lapMphAvg"));
+        gpsLatLast = Double.valueOf(m.get("gpsLatLast"));
+        gpsLonLast = Double.valueOf(m.get("gpsLonLast"));
+        gpsAltLast = Double.valueOf(m.get("gpsAltLast"));
+        gpsSpdLast = Float.valueOf(m.get("gpsSpdLast"));
+        gpsHdgLast = Float.valueOf(m.get("gpsHdgLast"));
+        gpsAccLast = Float.valueOf(m.get("gpsAccLast"));
+        gpsTimeLast = Long.valueOf(m.get("gpsTimeLast"));
+        gpsDistanceRun = Float.valueOf(m.get("gpsDistanceRun"));
         laps.clear();
         int i = 1;
         int lc = lapCount;
