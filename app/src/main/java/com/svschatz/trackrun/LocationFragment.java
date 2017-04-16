@@ -22,16 +22,17 @@ public class LocationFragment extends Fragment {
 
     //my member variables
     TextView headingTv, speedTv, avgSpeedTv, gpsDistTv;
-/*
+    TextView textView5, textView6;
+
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
             updateLocationDisplay();
-            timerHandler.postDelayed(this, 500);
+            timerHandler.postDelayed(this, 250);
         }
     };
-*/
+
     public LocationFragment() {
     }
 
@@ -51,21 +52,43 @@ public class LocationFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.location_fragment, container, false);
-        Log.d("TrackRunV2", "LocationFragment.onCreate()");
-        TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-        textView.setText("Location: " + getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
+        Log.d("TrackRun", "LocationFragment.onCreate()");
         headingTv = (TextView) rootView.findViewById(R.id.heading_tv);
         speedTv = (TextView) rootView.findViewById(R.id.speed_tv);
         avgSpeedTv = (TextView) rootView.findViewById(R.id.avgspeed_tv);
         gpsDistTv = (TextView) rootView.findViewById(R.id.gps_dist_tv);
+        textView5 = (TextView) rootView.findViewById(R.id.textView5);
+        textView6 = (TextView) rootView.findViewById(R.id.textView6);
         updateLocationDisplay();
         return rootView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d("TrackRun", "LocationFragment.onResume()");
+        timerHandler.postDelayed(timerRunnable, 0);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d("TrackRun", "LocationFragment.onPause()");
+        timerHandler.removeCallbacks(timerRunnable);
+    }
+
     public void updateLocationDisplay() {
-        headingTv.setText(MainActivity.sw.getStringGpsHeading());
+        headingTv.setText(MainActivity.sw.getStringGpsHeading() + (char) 0x00B0);
         speedTv.setText(MainActivity.sw.getStringGpsSpeed());
         avgSpeedTv.setText(MainActivity.sw.getStringAvgGpsSpeed());
         gpsDistTv.setText(MainActivity.sw.getStringGpsDistanceRun());
+        textView5.setText(MainActivity.sw.getStringStepCount());
+        switch (MainActivity.sw.getState()) {
+            case Swe.State.RUNNING:
+                textView6.setText(MainActivity.sw.getStringET(false));
+                break;
+            default:
+                textView6.setText(MainActivity.sw.getStringET(true));
+        }
     }
 }

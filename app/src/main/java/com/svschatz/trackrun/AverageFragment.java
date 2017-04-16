@@ -76,7 +76,7 @@ public class AverageFragment extends Fragment {
         milesTv.setText(MainActivity.sw.getStringMiles());
         paceTv.setText(MainActivity.sw.getStringAvgPace());
         mphTv.setText(MainActivity.sw.getStringLastMph());
-        stepsTv.setText(MainActivity.sw.getStringStepCount());
+        stepsTv.setText("C " + MainActivity.sw.getStringStepCount());
         stepspermileTv.setText(MainActivity.sw.getStringAvgStepsPerMile());
         stepsperminTv.setText(MainActivity.sw.getStringAvgSpm());
         steplengthTv.setText(MainActivity.sw.getStringAvgStepLength());

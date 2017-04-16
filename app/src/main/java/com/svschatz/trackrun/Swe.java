@@ -216,20 +216,20 @@ public class Swe {
     }
 
     public String getStringGpsHeading() {
-        return String.format("H %03d", Math.round(gpsHdgLast));
+        return String.format("%03d", Math.round(gpsHdgLast));
     }
 
     public String getStringGpsSpeed() {
-        return String.format("Sp %5.2f", gpsSpdLast * 2.23693629);
+        return String.format("%5.2f", gpsSpdLast * 2.23693629);
     }
 
     public String getStringAvgGpsSpeed() {
         double ags = gpsDistanceRun / et * 3600000.0;
-        return String.format("Sav %5.2f", ags);
+        return String.format("%5.2f", ags);
     }
 
     public String getStringGpsDistanceRun() {
-        return String.format("D %5.2f", gpsDistanceRun);
+        return String.format("%5.2f Mi", gpsDistanceRun);
     }
 
     public String getStringLapCount() {
@@ -318,7 +318,7 @@ public class Swe {
     }
 
     public String getStringStepCount() {
-        return String.format("C %,d", (int) Math.round(stepsCount));
+        return String.format("%,d", (int) Math.round(stepsCount));
     }
 
     public String getStringStepRate() {

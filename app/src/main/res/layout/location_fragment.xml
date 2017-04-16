@@ -14,37 +14,70 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/section_label"
+            android:id="@+id/gps_dist_tv"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textAlignment="center"
+            android:textSize="48sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/speed_tv"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".4"
+                android:text="X.XX"
+                android:textSize="48sp" />
+
+            <TextView
+                android:id="@+id/textView7"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".2"
+                android:text="Mph"
+                android:textAlignment="center"
+                android:textSize="24sp" />
+
+            <TextView
+                android:id="@+id/avgspeed_tv"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight=".4"
+                android:text="X.XX"
+                android:textAlignment="viewEnd"
+                android:textSize="48sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textView5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textAlignment="center"
+            android:textSize="48sp" />
+
+        <TextView
+            android:id="@+id/textView6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textAlignment="center"
+            android:textSize="48sp" />
 
         <TextView
             android:id="@+id/heading_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TextView"
+            android:textAlignment="center"
             android:textSize="48sp" />
 
-        <TextView
-            android:id="@+id/speed_tv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textSize="48sp" />
-
-        <TextView
-            android:id="@+id/avgspeed_tv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textSize="48sp" />
-
-        <TextView
-            android:id="@+id/gps_dist_tv"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-            android:textSize="48sp" />
     </LinearLayout>
 
 </RelativeLayout>

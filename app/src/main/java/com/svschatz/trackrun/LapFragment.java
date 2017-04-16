@@ -104,7 +104,7 @@ public class LapFragment extends Fragment {
         currentLapTimeTextView.setText(MainActivity.sw.getStringCurrentLapTime());
         lastLapTimeTextView.setText(MainActivity.sw.getStringLastLapTime());
         lastLapPaceTextView.setText(MainActivity.sw.getStringLastLapPace());
-        stepCountTextView.setText(MainActivity.sw.getStringStepCount());
+        stepCountTextView.setText("C " + MainActivity.sw.getStringStepCount());
         stepRateTextView.setText(MainActivity.sw.getStringStepRate());
     }
 }
