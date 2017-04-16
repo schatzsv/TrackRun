@@ -3,6 +3,7 @@ package com.svschatz.trackrun;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Sensor;
@@ -52,6 +53,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         com.google.android.gms.location.LocationListener {
 
+
+
     protected static final String TAG = "TrackRun";
 
     // my members
@@ -64,10 +67,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SensorManager sensorManager;
     private boolean mHaveStoragePermission = false;
 
-    // my settings
-    // todo add these to the saved/restored data
-    public static String mLapsPerMileString = "13.0";
-    public static double mLapsPerMileDouble = 13.0;
+    // Default settings
+    public String mLapsPerMileString = "13.0";
+    public double mLapsPerMileDouble = 13.0;
     private boolean mEnableGps = false;
     private boolean mCountLaps = true;
 
@@ -114,6 +116,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Log.d(TAG, "MainActivity.onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Restore preferences
+        SharedPreferences settings = getPreferences(MODE_PRIVATE);
+        mLapsPerMileString = settings.getString("LapsPerMile", "13.0");
+        mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);
+        mEnableGps = settings.getBoolean("EnableGps", false);
+        mCountLaps = settings.getBoolean("CountLaps", true);
+        sw.setLapsPerMile(mLapsPerMileDouble);
 
         // Create an instance of GoogleAPIClient.
         doInitGoogleLocationApi();
@@ -448,6 +458,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         }
                     }
                 }
+                // Save preferences
+                SharedPreferences settings = getPreferences(MODE_PRIVATE);
+                SharedPreferences.Editor editor = settings.edit();
+                editor.clear();
+                editor.putString("LapsPerMile", mLapsPerMileString);
+                editor.putBoolean("EnableGps", mEnableGps);
+                editor.putBoolean("CountLaps", mCountLaps);
+                editor.commit();
 
                 Toast.makeText(this, "Settings Updated", Toast.LENGTH_LONG).show();
             }

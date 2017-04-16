@@ -20,7 +20,6 @@ public class AverageFragment extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
 
     // my member variables
-    private double mLapsPerMile = 13.0;
     View rootView;
     TextView lapsTv, milesTv;
     TextView paceTv, mphTv;
@@ -73,8 +72,6 @@ public class AverageFragment extends Fragment {
     }
 
     public void updateAverageDisplay() {
-        mLapsPerMile = MainActivity.mLapsPerMileDouble;
-
         lapsTv.setText(MainActivity.sw.getStringLapCount());
         milesTv.setText(MainActivity.sw.getStringMiles());
         paceTv.setText(MainActivity.sw.getStringAvgPace());

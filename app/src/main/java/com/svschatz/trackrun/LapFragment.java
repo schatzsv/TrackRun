@@ -21,7 +21,6 @@ public class LapFragment extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
 
     // my member variables
-    private double mLapsPerMile = 13.0;
     View rootView;
     TextView lapCountTextView;
     TextView elapsedTimeTextView;
@@ -81,7 +80,6 @@ public class LapFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Log.d("TrackRun", "LapFragment.onResume()");
-        mLapsPerMile = MainActivity.mLapsPerMileDouble;
         timerHandler.postDelayed(timerRunnable, 0);
 
     }
