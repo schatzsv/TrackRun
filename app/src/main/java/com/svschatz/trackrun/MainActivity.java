@@ -3,13 +3,13 @@ package com.svschatz.trackrun;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -28,6 +28,14 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -37,14 +45,20 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
+        com.google.android.gms.location.LocationListener {
+
+    protected static final String TAG = "TrackRun";
 
     // my members
     public static Swe sw = new Swe();
     LapFragment mLapFragment;
     AverageFragment mAverageFragment;
+    LocationFragment mLocationFragment;
     boolean mButtonIsGreen = false;
     Button b;
     private SensorManager sensorManager;
@@ -97,9 +111,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d("TrackRun", "MainActivity.onCreate()");
+        Log.d(TAG, "MainActivity.onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Create an instance of GoogleAPIClient.
+        doInitGoogleLocationApi();
+
+        // Check location services permission
+        doCheckLocationPermission();
 
         // Check permissions
         if (ContextCompat.checkSelfPermission(this,
@@ -137,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     BufferedReader br = new BufferedReader(new FileReader(stateFile));
                     String line;
                     while ((line = br.readLine()) != null) {
-                        Log.d("TrackRun", line);
+                        Log.d(TAG, line);
                         String[] pr = line.split("[,]");
                         if (pr.length != 2) {
                             break;
@@ -170,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         b.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("TrackRun", "MainActivity.onClick()");
+                Log.d(TAG, "MainActivity.onClick()");
                 Button b = (Button) v;
                 if (sw.getState() == Swe.State.RESET) {
                     // Start pressed
@@ -193,7 +213,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         setButton("Lap", Color.LTGRAY);
                     }
                 }
-                mAverageFragment.updateAverageDisplay();
+                if (mAverageFragment != null){
+                    mAverageFragment.updateAverageDisplay();
+                }
+                if (mLocationFragment != null) {
+                    mLocationFragment.updateLocationDisplay();
+                }
             }
         });
 
@@ -235,6 +260,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
                 break;
             }
+            case MY_PERMISSIONS_ACCESS_FINE_LOCATION: {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d(TAG, "onRequestPermissionsResult() - permission granted");
+                    mHaveLocationPermission = true;
+                    getLocation();
+                    createLocationRequest();
+                    startLocationUpdates();
+                } else {
+                    Log.d(TAG, "onRequestPermissionsResult() - permission denied");
+                    mHaveLocationPermission = false;
+                }
+            }
 
             // other 'case' lines to check for other
             // permissions this app might request
@@ -246,19 +283,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Log.d("TrackRun", "LapFragment.onSensorChanged()");
+        Log.d(TAG, "LapFragment.onSensorChanged()");
         sw.step(System.currentTimeMillis(), event.values[0]);
     }
 
     @Override
+    protected void onStart() {
+        Log.d(TAG, "onStart()");
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+
+    @Override
     public void onResume() {
-        Log.d("TrackRun", "MainActivity.onResume()");
+        Log.d(TAG, "MainActivity.onResume()");
         super.onResume();
     }
 
     @Override
     protected void onStop() {
-        Log.d("TrackRun", "MainActivity.onStop()");
+        Log.d(TAG, "MainActivity.onStop()");
         super.onStop();
 
         //Save state
@@ -272,29 +316,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 File docDir = new File(Environment.getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_DOCUMENTS).toString());
                 if (!docDir.exists()) {
-                    Log.d("TrackRun",
+                    Log.d(TAG,
                             "MainActivity.onStop() docDir does not exist, attempt create");
                     if (!docDir.mkdir()) {
-                        Log.d("TrackRun", "MainActivity.onStop() docDir not created");
+                        Log.d(TAG, "MainActivity.onStop() docDir not created");
                     }
                 }
                 File trDir = new File (docDir.getPath(), "TrackRun");
                 if (!trDir.exists()) {
-                    Log.d("TrackRun", "MainActivity.onStop() trDir does not exist, attempt create");
+                    Log.d(TAG, "MainActivity.onStop() trDir does not exist, attempt create");
                     if (!trDir.mkdir()) {
-                        Log.d("TrackRun", "MainActivity.onStop() trDir not created");
+                        Log.d(TAG, "MainActivity.onStop() trDir not created");
                     }
                 }
                 File stateFile = new File(trDir.getPath(), "state");
                 if (!stateFile.exists()) {
-                    Log.d("TrackRun",
+                    Log.d(TAG,
                             "MainActivity.onStop() stateFile does not exist, attempt create");
                     if (!stateFile.createNewFile()) {
-                        Log.d("TrackRun", "MainActivity.onStop() stateFile not created");
+                        Log.d(TAG, "MainActivity.onStop() stateFile not created");
                     }
                 } else {
                     // have a good state file created, save off state
-                    Log.d("TrackRun", "MainActivity.onStop() write state to stateFile");
+                    Log.d(TAG, "MainActivity.onStop() write state to stateFile");
                     FileWriter fw;
                     BufferedWriter bw;
                     PrintWriter pw = null;
@@ -309,12 +353,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             String k = (String) pair.getKey();
                             String v = (String) pair.getValue();
                             String line = "\"" + k + "\"" + "," +  "\"" + v + "\"";
-                            Log.d("TrackRun", line);
+                            Log.d(TAG, line);
                             pw.println(line);
                         }
                     }
                     catch (IOException e) {
-                        Log.d("TrackRun", "MainActivity.onStop() IO exception in write state");
+                        Log.d(TAG, "MainActivity.onStop() IO exception in write state");
                     }
                     finally {
                         if (pw != null) pw.close();
@@ -325,6 +369,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         catch (IOException e) {
                 Log.e("TrackRun", "MainActivity.onStop() createNewFile IO exception");
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy()");
+        stopLocationUpdates();
+        mGoogleApiClient.disconnect();
+        super.onDestroy();
     }
 
     @Override
@@ -364,19 +416,44 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == UPDATE_SETTINGS_REQUEST) {
             if (resultCode == RESULT_OK) {
-                Log.d("TrackRun", "MainActivity.onActivityResult() - RESULT_OK");
+                Log.d(TAG, "MainActivity.onActivityResult() - RESULT_OK");
+                // Handle laps per mile setting
                 mLapsPerMileString = data.getStringExtra("LAPS_PER_MILE");
                 mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);
-                mCountLaps = data.getBooleanExtra("COUNT_LAPS", true);
-                mEnableGps = data.getBooleanExtra("ENABLE_GPS", false);
-                Toast.makeText(this, "Settings Updated", Toast.LENGTH_LONG).show();
-                // todo settings changed should trigger some actions to update?
                 sw.setLapsPerMile(mLapsPerMileDouble);
+                // todo Handle count laps/miles setting
+                mCountLaps = data.getBooleanExtra("COUNT_LAPS", true);
+                // todo Handle enable/disable GPS
+                boolean rv = data.getBooleanExtra("ENABLE_GPS", false);
+                if (rv != mEnableGps) {
+                    // GPS setting was updated
+                    if (rv == false) {
+                        // Disable GPS
+                        stopLocationUpdates();
+                        mEnableGps = false;
+                    } else {
+                        // Enable GPS
+                        if (mHaveLocationPermission) {
+                            startLocationUpdates();
+                            mEnableGps = true;
+                        } else {
+                            Toast.makeText(this, "Can't enable GPS, check permission",
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+
+                Toast.makeText(this, "Settings Updated", Toast.LENGTH_LONG).show();
             }
             else if (resultCode == RESULT_CANCELED) {
                 Log.d("TrackRunV2", "MainActivity.onActivityResult() - RESULT_CANCELLED");
             }
-            mAverageFragment.updateAverageDisplay();
+            if (mAverageFragment != null){
+                mAverageFragment.updateAverageDisplay();
+            }
+            if (mLocationFragment != null) {
+                mLocationFragment.updateLocationDisplay();
+            }
         }
     }
 
@@ -400,7 +477,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 case 1:
                     return mAverageFragment = AverageFragment.newInstance(position + 1);
                 case 2:
-                    return LocationFragment.newInstance(position + 1);
+                    return mLocationFragment = LocationFragment.newInstance(position + 1);
                 default:
                     //todo test what happens if reached
                     return null;
@@ -432,20 +509,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     // my member functions
 
     public void onStopMenu() {
-        Log.d("TrackRun", "MainActivity.onStopMenu()");
+        Log.d(TAG, "MainActivity.onStopMenu()");
         if (sw.getState() == Swe.State.PAUSE) {
             return; //do nothing if already stopped
         }
         sw.pause(System.currentTimeMillis());
         timerHandler.removeCallbacks(timerRunnable);
         setButton("Resume", Color.LTGRAY);
-        mLapFragment.updateLapDisplay();
-        mAverageFragment.updateAverageDisplay();
+        if (mLapFragment != null) {
+            mLapFragment.updateLapDisplay();
+        }
+        if (mAverageFragment != null){
+            mAverageFragment.updateAverageDisplay();
+        }        if (mLocationFragment != null) {
+            mLocationFragment.updateLocationDisplay();
+        }
         return;
     }
 
     public void onResetMenu() {
-        Log.d("TrackRun", "MainActivity.onResetMenu()");
+        Log.d(TAG, "MainActivity.onResetMenu()");
         //if running, kill timer
         if (sw.getState() == Swe.State.RUNNING) {
             timerHandler.removeCallbacks(timerRunnable);
@@ -461,8 +544,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //stepCountTextView.setText(String.format("0"));
         //stepsPMTextView.setText(String.format("%5.2f", 0.0));
         //avgSPMTextView.setText(String.format("%5.2f", 0.0));
-        mLapFragment.updateLapDisplay();
-        mAverageFragment.updateAverageDisplay();
+        if (mLapFragment != null) {
+            mLapFragment.updateLapDisplay();
+        }        if (mAverageFragment != null){
+            mAverageFragment.updateAverageDisplay();
+        }        if (mLocationFragment != null) {
+            mLocationFragment.updateLocationDisplay();
+        }
     }
 
     public void setButton(CharSequence text, int color) {
@@ -473,5 +561,167 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } else {
             mButtonIsGreen = false;
         }
+    }
+
+    /*
+    ** GoogleApi related fields, overrides and methods
+    */
+
+    private GoogleApiClient mGoogleApiClient;
+
+    protected void doInitGoogleLocationApi() {
+        Log.d(TAG, "doInitGoogleLocationApi()");
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+    }
+
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        Log.d(TAG, "onConnected()");
+        if (!mHaveLocationPermission) {
+            doGetLocationPermission();
+        }
+
+        if (mHaveLocationPermission) {
+            getLocation();
+            if (mLastLocation != null) {
+                /*
+                mLatitudeText.setText(String.format(Locale.getDefault(), "%s: %f", mLatitudeLabel,
+                        mLastLocation.getLatitude()));
+                mLongitudeText.setText(String.format(Locale.getDefault(), "%s: %f", mLongitudeLabel,
+                        mLastLocation.getLongitude()));
+                */
+            } else {
+                Log.d(TAG, "no last location");
+            }
+            createLocationRequest();
+            startLocationUpdates();
+        }
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult result) {
+        // Refer to the javadoc for ConnectionResult to see what error codes might be returned in
+        // onConnectionFailed.
+        Log.d(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + result.getErrorCode());
+    }
+
+    @Override
+    public void onConnectionSuspended(int cause) {
+        // The connection to Google Play services was lost for some reason. We call connect() to
+        // attempt to re-establish the connection.
+        Log.d(TAG, "Connection suspended");
+        mGoogleApiClient.connect();
+    }
+
+    /*
+    ** Permission related fields, overrides and methods
+    */
+
+    static final int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 51;
+    private boolean mHaveLocationPermission = false;
+
+    protected void doCheckLocationPermission() {
+        Log.d(TAG, "doCheckLocationPermission()");
+        int permissionCheck = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "have location permission");
+            mHaveLocationPermission = true;
+        } else {
+            Log.d(TAG, "do not have location permission");
+            mHaveLocationPermission = false;
+        }
+    }
+
+    protected void doGetLocationPermission() {
+        Log.d(TAG, "doGetLocationPermission()");
+        int permissionCheck = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "FINE permission granted in onCreate()");
+            mHaveLocationPermission = true;
+        } else {
+            Log.d(TAG, "FINE permission not granted during onCreate()");
+            mHaveLocationPermission = false;
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    /*
+    ** Location related fields, overrides and methods
+    */
+
+    LocationRequest mLocationRequest;
+    protected Location mLastLocation;
+    protected Location mCurrentLocation;
+    protected String mLastUpdateTime;
+    protected int mCountUpdates;
+    protected LinkedList mLocations = new LinkedList();
+
+    @Override
+    public void onLocationChanged(Location l) {
+        Log.d(TAG, "onLocationChanged()");
+        sw.gps(l.getLatitude(), l.getLongitude(),l.getAltitude(), l.getSpeed(), l.getBearing(),
+                l.getAccuracy(), l.getTime());
+        if (mLocationFragment != null) {
+            mLocationFragment.updateLocationDisplay();
+        }
+        //logLocation(location);
+        //updateUI();
+    }
+
+    protected void getLocation() {
+        Log.d(TAG, "getLocation()");
+        try {
+            Location l = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            sw.gps(l.getLatitude(), l.getLongitude(),l.getAltitude(), l.getSpeed(), l.getBearing(),
+                    l.getAccuracy(), l.getTime());
+            //logLocation(l);
+            //updateUI();
+        }
+        catch (SecurityException e) {
+            Log.d(TAG, "getLocation() security exception last location");
+        }
+    }
+
+    protected void startLocationUpdates() {
+        Log.d(TAG, "startLocationUpdates()");
+        try {
+            LocationServices.FusedLocationApi.requestLocationUpdates(
+                    mGoogleApiClient, mLocationRequest, this);
+        }
+        catch (SecurityException e) {
+            Log.d(TAG, "security exception location update");
+        }
+    }
+
+    protected void stopLocationUpdates() {
+        Log.d(TAG, "stopLocationUpdates()");
+        try {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        }
+        catch (SecurityException e) {
+            Log.d(TAG, "security exception location update");
+        }
+    }
+
+    protected void createLocationRequest() {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(2000);
+        mLocationRequest.setFastestInterval(1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(mLocationRequest);
+        PendingResult<LocationSettingsResult> result =
+                LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient,
+                        builder.build());
     }
 }

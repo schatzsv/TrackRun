@@ -46,6 +46,10 @@ public class Swe {
         }
     }
     ArrayList<Lap> laps = new ArrayList<Lap>();
+    double gpsLatLast, gpsLonLast, gpsAltLast; //last gps data, alt is meters
+    float gpsSpdLast, gpsHdgLast, gpsAccLast; //last gps data, meters/s, deg(0-360), meters
+    long gpsTimeLast; //gps time mS UTC
+    float gpsDistanceRun; //calculated run distance in miles
 
     public Swe() {
         //System.out.println("Swe()");
@@ -163,6 +167,44 @@ public class Swe {
             default:
                 break;
         }
+    }
+
+    public void gps(double lat, double lon, double alt,
+                    float spd, float hdg, float acc, long time) {
+        switch (state) {
+            case State.RUNNING:
+                //todo Calculate distance run
+                gpsDistanceRun += 0.1;
+                gpsLatLast = lat;
+                gpsLonLast = lon;
+                gpsAltLast = alt;
+                gpsSpdLast = spd;
+                gpsHdgLast = hdg;
+                gpsAccLast = acc;
+                gpsTimeLast = time;
+                break;
+            default:
+                gpsLatLast = lat;
+                gpsLonLast = lon;
+                gpsAltLast = alt;
+                gpsSpdLast = spd;
+                gpsHdgLast = hdg;
+                gpsAccLast = acc;
+                gpsTimeLast = time;
+                break;
+        }
+    }
+
+    public String getStringGpsHeading() {
+        return String.format("H %03d", Math.round(gpsHdgLast));
+    }
+
+    public String getStringGpsSpeed() {
+        return String.format("S %4.1f", gpsSpdLast * 2.23693629);
+    }
+
+    public String getStringGpsDistanceRun() {
+        return String.format("D %4.1f", gpsDistanceRun);
     }
 
     public String getStringLapCount() {

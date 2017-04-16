@@ -8,9 +8,36 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.svschatz.trackrun.LocationFragment">
 
-    <TextView
-        android:id="@+id/section_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/section_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/heading_tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textSize="48sp" />
+
+        <TextView
+            android:id="@+id/speed_tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textSize="48sp" />
+
+        <TextView
+            android:id="@+id/gps_dist_tv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView"
+            android:textSize="48sp" />
+    </LinearLayout>
 
 </RelativeLayout>
