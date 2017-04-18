@@ -114,7 +114,13 @@ public class LapFragment extends Fragment {
             } else {
                 elapsedTimeTextView.setText(MainActivity.sw.getStringET(true));
             }
-            mileCountTextView.setText(MainActivity.sw.getStringMiles());
+            if (!MainActivity.trs.getEnableGps()) {
+                // Todo Estimate miles based on steps
+                mileCountTextView.setText(MainActivity.sw.getStringMiles());
+            } else {
+                // Use GPS mileage
+                mileCountTextView.setText(MainActivity.sw.getStringGpsDistanceRun());
+            }
             currentLapTimeTextView.setText("");
             lastLapTimeTextView.setText("");
             lastLapPaceTextView.setText("");
