@@ -94,17 +94,33 @@ public class LapFragment extends Fragment {
     public void updateLapDisplay() {
         //Log.d("TrackRun", "LapFragment.updateLapDisplay()");
 
-        lapCountTextView.setText(MainActivity.sw.getStringLapCount());
-        if (MainActivity.sw.getState() == Swe.State.RUNNING) {
-            elapsedTimeTextView.setText(MainActivity.sw.getStringET(false));
+        if (MainActivity.trs.getCountLaps()) {
+            lapCountTextView.setText(MainActivity.sw.getStringLapCount());
+            if (MainActivity.sw.getState() == Swe.State.RUNNING) {
+                elapsedTimeTextView.setText(MainActivity.sw.getStringET(false));
+            } else {
+                elapsedTimeTextView.setText(MainActivity.sw.getStringET(true));
+            }
+            mileCountTextView.setText(MainActivity.sw.getStringMiles());
+            currentLapTimeTextView.setText(MainActivity.sw.getStringCurrentLapTime());
+            lastLapTimeTextView.setText(MainActivity.sw.getStringLastLapTime());
+            lastLapPaceTextView.setText(MainActivity.sw.getStringLastLapPace());
+            stepCountTextView.setText("C " + MainActivity.sw.getStringStepCount());
+            stepRateTextView.setText(MainActivity.sw.getStringStepRate());
         } else {
-            elapsedTimeTextView.setText(MainActivity.sw.getStringET(true));
+            lapCountTextView.setText("");
+            if (MainActivity.sw.getState() == Swe.State.RUNNING) {
+                elapsedTimeTextView.setText(MainActivity.sw.getStringET(false));
+            } else {
+                elapsedTimeTextView.setText(MainActivity.sw.getStringET(true));
+            }
+            mileCountTextView.setText(MainActivity.sw.getStringMiles());
+            currentLapTimeTextView.setText("");
+            lastLapTimeTextView.setText("");
+            lastLapPaceTextView.setText("");
+            stepCountTextView.setText("C " + MainActivity.sw.getStringStepCount());
+            stepRateTextView.setText("");
         }
-        mileCountTextView.setText(MainActivity.sw.getStringMiles());
-        currentLapTimeTextView.setText(MainActivity.sw.getStringCurrentLapTime());
-        lastLapTimeTextView.setText(MainActivity.sw.getStringLastLapTime());
-        lastLapPaceTextView.setText(MainActivity.sw.getStringLastLapPace());
-        stepCountTextView.setText("C " + MainActivity.sw.getStringStepCount());
-        stepRateTextView.setText(MainActivity.sw.getStringStepRate());
+
     }
 }

@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener,
@@ -68,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private boolean mHaveStoragePermission = false;
 
     // Default settings
+    public static TrackRunSettings trs = new TrackRunSettings();
     public String mLapsPerMileString = "13.0";
     public double mLapsPerMileDouble = 13.0;
     private boolean mEnableGps = false;
@@ -123,6 +123,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);
         mEnableGps = settings.getBoolean("EnableGps", false);
         mCountLaps = settings.getBoolean("CountLaps", true);
+        trs.setCountLaps(mCountLaps);
+        trs.setEnableGps(mEnableGps);
+        trs.setLapsPerMile(mLapsPerMileString);
         sw.setLapsPerMile(mLapsPerMileDouble);
 
         // Create an instance of GoogleAPIClient.
@@ -262,17 +265,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // permission was granted
+                    Log.d(TAG, "onRequestPermissionsResult() - ext store permission granted");
                     mHaveStoragePermission = true;
 
                 } else {
                     // permission denied
+                    Log.d(TAG, "onRequestPermissionsResult() - ext store permission denied");
                     mHaveStoragePermission = false;
                 }
                 break;
             }
             case MY_PERMISSIONS_ACCESS_FINE_LOCATION: {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "onRequestPermissionsResult() - permission granted");
+                    Log.d(TAG, "onRequestPermissionsResult() - location permission granted");
                     mHaveLocationPermission = true;
                     if (mEnableGps) {
                         getLocation();
@@ -280,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         startLocationUpdates();
                     }
                 } else {
-                    Log.d(TAG, "onRequestPermissionsResult() - permission denied");
+                    Log.d(TAG, "onRequestPermissionsResult() - location permission denied");
                     mHaveLocationPermission = false;
                 }
             }
@@ -434,11 +439,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 // Handle laps per mile setting
                 mLapsPerMileString = data.getStringExtra("LAPS_PER_MILE");
                 mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);
+                trs.setLapsPerMile(mLapsPerMileString);
                 sw.setLapsPerMile(mLapsPerMileDouble);
                 // todo Handle count laps/miles setting
                 mCountLaps = data.getBooleanExtra("COUNT_LAPS", true);
+                trs.setCountLaps(mCountLaps);
                 // todo Handle enable/disable GPS
                 boolean rv = data.getBooleanExtra("ENABLE_GPS", false);
+                trs.setEnableGps(rv);
                 if (rv != mEnableGps) {
                     // GPS setting was updated
                     if (rv == false) {
@@ -549,7 +557,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
-        return;
     }
 
     public void onResetMenu() {

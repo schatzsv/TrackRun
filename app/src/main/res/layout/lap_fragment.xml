@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:layout_weight=".5"
             android:text="La XXX"
-            android:textSize="40sp" />
+            android:textSize="48sp" />
 
         <TextView
             android:id="@+id/mileCountTextView"
@@ -41,16 +41,16 @@
             android:id="@+id/currentLapTimeTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight=".75"
+            android:layout_weight=".5"
             android:text="Cl XX:XX:XX"
-            android:textSize="40sp" />
+            android:textSize="32sp" />
 
         <TextView
             android:id="@+id/spare1TextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight=".25"
-            android:textSize="40sp" />
+            android:layout_weight=".5"
+            android:textSize="48sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -64,7 +64,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Ll XX.X"
-            android:textSize="40sp" />
+            android:textSize="48sp" />
 
         <TextView
             android:id="@+id/lastLapPaceTextView"
@@ -94,7 +94,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="R XXX.X"
-            android:textSize="40sp" />
+            android:textSize="48sp" />
     </LinearLayout>
 
     <TextView
