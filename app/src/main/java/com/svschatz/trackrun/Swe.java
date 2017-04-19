@@ -272,6 +272,10 @@ public class Swe {
         return String.format("Mi %.2f", lapCount / mLapsPerMile);
     }
 
+    public String getStringStepEstimatedMiles() {
+        return String.format("Mi %.2f", stepsCount / MainActivity.trs.mStepsPerMile);
+    }
+
     public String getStringCurrentLapTime() {
         double lapTimeSecs = (et-lapTimeStart) / 1000.0;
         if (lapTimeSecs < 59.5) {

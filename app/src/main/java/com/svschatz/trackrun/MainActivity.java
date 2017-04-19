@@ -118,6 +118,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setContentView(R.layout.activity_main);
 
         // Restore preferences
+        // todo add a preference and setting screen for mLapsPerMile
+        // todo convert all preference uses to use TrackRunSettings class
         SharedPreferences settings = getPreferences(MODE_PRIVATE);
         mLapsPerMileString = settings.getString("LapsPerMile", "13.0");
         mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);

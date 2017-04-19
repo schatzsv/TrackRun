@@ -8,11 +8,13 @@ public class TrackRunSettings {
     boolean mEnableGps;
     boolean mCountLaps;
     double mLapsPerMile;
+    double mStepsPerMile;
 
     public TrackRunSettings() {
         mEnableGps = false;
         mCountLaps = true;
         mLapsPerMile = 13.0;
+        mStepsPerMile = 1462.0;
     }
 
     public void setEnableGps(boolean s) {
@@ -47,4 +49,11 @@ public class TrackRunSettings {
         return String.valueOf(mLapsPerMile);
     }
 
+    public double getStepsPerMile() {
+        return mStepsPerMile;
+    }
+
+    public void setmStepsPerMile(double spm) {
+        mStepsPerMile = spm;
+    }
 }

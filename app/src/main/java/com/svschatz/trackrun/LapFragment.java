@@ -116,7 +116,7 @@ public class LapFragment extends Fragment {
             }
             if (!MainActivity.trs.getEnableGps()) {
                 // Todo Estimate miles based on steps
-                mileCountTextView.setText(MainActivity.sw.getStringMiles());
+                mileCountTextView.setText(MainActivity.sw.getStringStepEstimatedMiles());
             } else {
                 // Use GPS mileage
                 mileCountTextView.setText(MainActivity.sw.getStringGpsDistanceRun());
