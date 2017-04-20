@@ -36,6 +36,7 @@ public class LapFragment extends Fragment {
     Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
+            MainActivity.sw.doTenths();
             updateLapDisplay();
             timerHandler.postDelayed(this, 250);
         }
@@ -121,12 +122,11 @@ public class LapFragment extends Fragment {
                 // Use GPS mileage
                 mileCountTextView.setText(MainActivity.sw.getStringGpsDistanceRun());
             }
-            currentLapTimeTextView.setText("");
+            currentLapTimeTextView.setText(MainActivity.sw.getStringTenthPace());
             lastLapTimeTextView.setText("");
             lastLapPaceTextView.setText("");
             stepCountTextView.setText("C " + MainActivity.sw.getStringStepCount());
-            stepRateTextView.setText("");
+            stepRateTextView.setText(MainActivity.sw.getStringTenthStepRate());
         }
-
     }
 }

@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.svschatz.trackrun.MainActivity.trs;
+
 /**
  * Created by steve on 3/18/17.
  */
 
 public class Swe {
+    String TAG = "Swe";
     private double mLapsPerMile = 13.0;
     int state; //0 - none, 1 - reset, 2 - running, 3 - pause
     public class State {
@@ -28,6 +31,7 @@ public class Swe {
     double stepsSpmCur; //instant spm
     double stepsSpmLastLap;
     double stepsSpmAvg;
+    double stepsEstimatedMiles;
     int lapCount;
     long lapTimeStart; //et for start of lap
     long lapTimeLast; //mS of last lap
@@ -50,6 +54,13 @@ public class Swe {
     float gpsSpdLast, gpsHdgLast, gpsAccLast; //last gps data, meters/s, deg(0-360), meters
     long gpsTimeLast; //gps time mS UTC
     float gpsDistanceRun; //calculated run distance in miles
+
+    double tenthLastDistance;
+    double tenthNextDistance;
+    long tenthLastTime;
+    double tenthLastSteps;
+    double tenthPace;
+    double tenthStepsPerMin;
 
     public Swe() {
         //System.out.println("Swe()");
@@ -80,6 +91,7 @@ public class Swe {
         stepsSpmLastLap = 0;
         stepsSpmAvg = 0;
         stepsSpmCur = 0;
+        stepsEstimatedMiles = 0;
 
         //lap related
         lapCount = 0;
@@ -99,6 +111,14 @@ public class Swe {
         gpsHdgLast = (float) 0.0;
         gpsAccLast = (float) 0.0;
         gpsTimeLast = 0;
+
+        //tenth mile related
+        tenthLastDistance = 0.0;
+        tenthNextDistance = 0.1;
+        tenthLastTime = 0;
+        tenthLastSteps = 0.0;
+        tenthPace = 0.0;
+        tenthStepsPerMin = 0.0;
 
     }
 
@@ -151,6 +171,7 @@ public class Swe {
                 stepsTimeLastUpdate = ct;
                 stepsCountLast = steps;
                 stepsSpmAvg = stepsCount / ((double) et / 1000.0) * 60.0;
+                stepsEstimatedMiles = stepsCount / trs.mStepsPerMile;
                 break;
             default:
                 stepsTimeLastUpdate = ct;
@@ -215,6 +236,43 @@ public class Swe {
         gpsTimeLast = time;
     }
 
+    public void doTenths() {
+        //todo code doTenths()
+        //todo save in state
+        // if not gone a tenth, return
+        double d;
+        if (trs.mEnableGps)
+            d = gpsDistanceRun;
+        else
+            d = stepsEstimatedMiles;
+        if (d >= tenthNextDistance) {
+            // recalculate stats for the last tenth of a mile
+            // tenthPace [s/mi]
+            // tenthStepsPerMin [st/mi]
+            long t = et - tenthLastTime;
+            double s = stepsCount - tenthLastSteps;
+            double di = d - tenthLastDistance;
+            tenthPace = t/1000/di;
+            tenthStepsPerMin = s/((double)t/1000/60);
+
+            tenthLastDistance = d;
+            tenthNextDistance += 0.1;
+            tenthLastTime = et;
+            tenthLastSteps = stepsCount;
+        }
+    }
+
+    public String getStringTenthPace() {
+        long t = Math.round(tenthPace);
+        long s = t % 60;
+        long m = t / 60;
+        return String.format("%d:%02d", m,s);
+    }
+
+    public String getStringTenthStepRate() {
+        return String.format("%.1f", tenthStepsPerMin);
+    }
+
     public String getStringGpsHeading() {
         return String.format("%03d", Math.round(gpsHdgLast));
     }
@@ -273,7 +331,7 @@ public class Swe {
     }
 
     public String getStringStepEstimatedMiles() {
-        return String.format("Mi %.2f", stepsCount / MainActivity.trs.mStepsPerMile);
+        return String.format("Mi %.2f", Math.floor(stepsEstimatedMiles*100)/100);
     }
 
     public String getStringCurrentLapTime() {
@@ -404,7 +462,7 @@ public class Swe {
 
     public Map<String, String> getInternalState() {
         Map<String, String> m = new HashMap<String, String>();
-        m.put("ver", "0.3");
+        m.put("ver", "0.7");
         m.put("state", Integer.toString(state));
         m.put("et", Long.toString(et));
         m.put("ctLast", Long.toString(ctLast));
@@ -417,6 +475,7 @@ public class Swe {
         m.put("stepsSpmCur", Double.toString(stepsSpmCur));
         m.put("stepsSpmLastLap", Double.toString(stepsSpmLastLap));
         m.put("stepsSpmAvg", Double.toString(stepsSpmAvg));
+        m.put("stepsEstimatedMiles", Double.toString(stepsEstimatedMiles));
         m.put("lapCount", Integer.toString(lapCount));
         m.put("lapTimeStart", Long.toString(lapTimeStart));
         m.put("lapTimeLast", Long.toString(lapTimeLast));
@@ -431,6 +490,12 @@ public class Swe {
         m.put("gpsAccLast", Float.toString(gpsAccLast));
         m.put("gpsTimeLast", Long.toString(gpsTimeLast));
         m.put("gpsDistanceRun", Float.toString(gpsDistanceRun));
+        m.put("tenthLastDistance", Double.toString(tenthLastDistance));
+        m.put("tenthNextDistance", Double.toString(tenthNextDistance));
+        m.put("tenthLastTime", Long.toString(tenthLastTime));
+        m.put("tenthLastSteps", Double.toString(tenthLastSteps));
+        m.put("tenthPace", Double.toString(tenthPace));
+        m.put("tenthStepsPerMin", Double.toString(tenthStepsPerMin));
         for (Lap l : laps) {
             String v = "";
             v += Integer.toString(l.number) + ":";
@@ -444,7 +509,7 @@ public class Swe {
 
     public boolean setInternalState(Map<String, String> m) {
         if (!m.containsKey("ver")) return false;
-        if (!m.get("ver").contentEquals("0.3")) return false;
+        if (!m.get("ver").contentEquals("0.7")) return false;
         state = Integer.valueOf(m.get("state"));
         et = Long.valueOf(m.get("et"));
         ctLast = Long.valueOf(m.get("ctLast"));
@@ -457,6 +522,7 @@ public class Swe {
         stepsLastLap = Double.valueOf(m.get("stepsLastLap"));
         stepsSpmLastLap = Double.valueOf(m.get("stepsSpmLastLap"));
         stepsSpmAvg = Double.valueOf(m.get("stepsSpmAvg"));
+        stepsEstimatedMiles = Double.valueOf(m.get("stepsEstimatedMiles"));
         lapCount = Integer.valueOf(m.get("lapCount"));
         lapTimeStart = Long.valueOf(m.get("lapTimeStart"));
         lapTimeLast = Long.valueOf(m.get("lapTimeLast"));
@@ -471,6 +537,13 @@ public class Swe {
         gpsAccLast = Float.valueOf(m.get("gpsAccLast"));
         gpsTimeLast = Long.valueOf(m.get("gpsTimeLast"));
         gpsDistanceRun = Float.valueOf(m.get("gpsDistanceRun"));
+        tenthLastDistance = Double.valueOf(m.get("tenthLastDistance"));
+        tenthNextDistance = Double.valueOf(m.get("tenthNextDistance"));
+        tenthLastTime = Long.valueOf(m.get("tenthLastTime"));
+        tenthLastSteps = Double.valueOf(m.get("tenthLastSteps"));
+        tenthPace = Double.valueOf(m.get("tenthPace"));
+        tenthStepsPerMin = Double.valueOf(m.get("tenthStepsPerMin"));
+
         laps.clear();
         int i = 1;
         int lc = lapCount;

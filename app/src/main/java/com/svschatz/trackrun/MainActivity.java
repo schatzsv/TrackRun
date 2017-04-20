@@ -56,6 +56,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     protected static final String TAG = "TrackRun";
 
+    // fake steps
+    boolean mFakeSteps = true;
+    long mLastFakeStepTime = 0;
+    long mFakeStepIncrement = (1000*(9*60 + 30))/1462;
+    double mFakeStepCount = 0;
+
     // my members
     public static Swe sw = new Swe();
     LapFragment mLapFragment;
@@ -84,7 +90,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
-            sw.tick(System.currentTimeMillis());
+            long t = System.currentTimeMillis();
+            sw.tick(t);
             if (mButtonIsGreen) {
                 if (sw.getLapTimeCur() >= 8.0) {
                     b.setBackgroundColor(Color.LTGRAY);
@@ -95,6 +102,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     };
 
+    // timer for fake steps
+    Handler fakeStepTimerHandler = new Handler();
+    Runnable fakeStepTimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long t = System.currentTimeMillis();
+            mFakeStepCount += 1;
+            sw.step(t, mFakeStepCount);
+            fakeStepTimerHandler.postDelayed(this, mFakeStepIncrement);
+        }
+    };
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -256,6 +274,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 break;
         }
 
+        // Start fake step timer
+        if (mFakeSteps) {
+            fakeStepTimerHandler.postDelayed(fakeStepTimerRunnable, 0);
+        }
     }
 
     @Override
@@ -703,6 +725,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         Log.d(TAG, "getLocation()");
         try {
             Location l = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            if (l == null) return;
             sw.gps(l.getLatitude(), l.getLongitude(),l.getAltitude(), l.getSpeed(), l.getBearing(),
                     l.getAccuracy(), l.getTime());
         }
