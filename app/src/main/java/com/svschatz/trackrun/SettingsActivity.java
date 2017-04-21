@@ -13,7 +13,7 @@ import android.widget.RadioButton;
 public class SettingsActivity extends AppCompatActivity {
 
     Button b;
-    EditText lpm;
+    EditText lpm, spm;
     CheckBox egps;
     RadioButton cl, cm;
 
@@ -27,6 +27,9 @@ public class SettingsActivity extends AppCompatActivity {
         lpm = (EditText) findViewById(R.id.editText_lapsPerMile);
         String lapsPerMile = getIntent().getStringExtra("LAPS_PER_MILE");
         lpm.setText(lapsPerMile);
+        spm = (EditText) findViewById(R.id.editText_stepsPerMile);
+        String stepsPerMile = getIntent().getStringExtra("STEPS_PER_MILE");
+        spm.setText(stepsPerMile);
         egps = (CheckBox) findViewById(R.id.checkBox_enableGps);
         egps.setChecked(getIntent().getBooleanExtra("ENABLE_GPS", true));
         cl = (RadioButton) findViewById(R.id.radioButton_countLaps);
@@ -48,6 +51,7 @@ public class SettingsActivity extends AppCompatActivity {
         Log.d("TrackRunV2", "SettingsActivity.saveAndReturn()");
         Intent intent = new Intent();
         intent.putExtra("LAPS_PER_MILE", lpm.getText().toString());
+        intent.putExtra("STEPS_PER_MILE", spm.getText().toString());
         intent.putExtra("ENABLE_GPS", egps.isChecked());
         intent.putExtra("COUNT_LAPS", cl.isChecked());
         setResult(RESULT_OK, intent);

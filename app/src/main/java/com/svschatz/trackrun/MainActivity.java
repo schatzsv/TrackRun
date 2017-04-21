@@ -56,9 +56,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     protected static final String TAG = "TrackRun";
 
-    // fake steps
-    boolean mFakeSteps = true;
-    long mLastFakeStepTime = 0;
+    // fake steps, for testing
+    boolean mFakeSteps = false;
     long mFakeStepIncrement = (1000*(9*60 + 30))/1462;
     double mFakeStepCount = 0;
 
@@ -74,10 +73,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     // Default settings
     public static TrackRunSettings trs = new TrackRunSettings();
-    public String mLapsPerMileString = "13.0";
-    public double mLapsPerMileDouble = 13.0;
-    private boolean mEnableGps = false;
-    private boolean mCountLaps = true;
 
     // intent codes
     static final int UPDATE_SETTINGS_REQUEST = 1000;
@@ -136,17 +131,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setContentView(R.layout.activity_main);
 
         // Restore preferences
-        // todo add a preference and setting screen for mLapsPerMile
-        // todo convert all preference uses to use TrackRunSettings class
         SharedPreferences settings = getPreferences(MODE_PRIVATE);
-        mLapsPerMileString = settings.getString("LapsPerMile", "13.0");
-        mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);
-        mEnableGps = settings.getBoolean("EnableGps", false);
-        mCountLaps = settings.getBoolean("CountLaps", true);
-        trs.setCountLaps(mCountLaps);
-        trs.setEnableGps(mEnableGps);
-        trs.setLapsPerMile(mLapsPerMileString);
-        sw.setLapsPerMile(mLapsPerMileDouble);
+        trs.setCountLaps(settings.getBoolean("CountLaps", true));
+        trs.setEnableGps(settings.getBoolean("EnableGps", false));
+        trs.setLapsPerMile(settings.getString("LapsPerMile", "13.0"));
+        trs.setStepsPerMile(settings.getString("StepsPerMile", "1462.0"));
 
         // Create an instance of GoogleAPIClient.
         doInitGoogleLocationApi();
@@ -303,7 +292,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d(TAG, "onRequestPermissionsResult() - location permission granted");
                     mHaveLocationPermission = true;
-                    if (mEnableGps) {
+                    if (trs.mEnableGps) {
                         getLocation();
                         createLocationRequest();
                         startLocationUpdates();
@@ -415,7 +404,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onDestroy() {
         Log.d(TAG, "onDestroy()");
-        if (mEnableGps) {
+        if (trs.mEnableGps) {
             stopLocationUpdates();
         }
         mGoogleApiClient.disconnect();
@@ -445,9 +434,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             return true;
         } else if (id == R.id.action_settings) {
             Intent intent = new Intent(this, SettingsActivity.class);
-            intent.putExtra("LAPS_PER_MILE", mLapsPerMileString);
-            intent.putExtra("COUNT_LAPS", mCountLaps);
-            intent.putExtra("ENABLE_GPS", mEnableGps);
+            intent.putExtra("LAPS_PER_MILE", trs.getLapsPerMileString());
+            intent.putExtra("STEPS_PER_MILE", trs.getStepsPerMileString());
+            intent.putExtra("COUNT_LAPS", trs.mCountLaps);
+            intent.putExtra("ENABLE_GPS", trs.mEnableGps);
             startActivityForResult(intent, UPDATE_SETTINGS_REQUEST);
             return true;
         }
@@ -461,29 +451,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (resultCode == RESULT_OK) {
                 Log.d(TAG, "MainActivity.onActivityResult() - RESULT_OK");
                 // Handle laps per mile setting
-                mLapsPerMileString = data.getStringExtra("LAPS_PER_MILE");
-                mLapsPerMileDouble = Double.parseDouble(mLapsPerMileString);
-                trs.setLapsPerMile(mLapsPerMileString);
-                sw.setLapsPerMile(mLapsPerMileDouble);
+                trs.setLapsPerMile(data.getStringExtra("LAPS_PER_MILE"));
+                // Handle steps per mile setting
+                trs.setStepsPerMile(data.getStringExtra("STEPS_PER_MILE"));
                 // todo Handle count laps/miles setting
-                mCountLaps = data.getBooleanExtra("COUNT_LAPS", true);
-                trs.setCountLaps(mCountLaps);
+                trs.setCountLaps(data.getBooleanExtra("COUNT_LAPS", true));
                 // todo Handle enable/disable GPS
                 boolean rv = data.getBooleanExtra("ENABLE_GPS", false);
-                trs.setEnableGps(rv);
-                if (rv != mEnableGps) {
+                if (rv != trs.mEnableGps) {
                     // GPS setting was updated
                     if (rv == false) {
                         // Disable GPS
                         stopLocationUpdates();
-                        mEnableGps = false;
+                        trs.setEnableGps(false);
                     } else {
                         // Enable GPS
                         if (mHaveLocationPermission) {
                             getLocation();
                             createLocationRequest();
                             startLocationUpdates();
-                            mEnableGps = true;
+                            trs.setEnableGps(true);
                         } else {
                             Toast.makeText(this, "Can't enable GPS, check permission",
                                     Toast.LENGTH_LONG).show();
@@ -494,9 +481,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 SharedPreferences settings = getPreferences(MODE_PRIVATE);
                 SharedPreferences.Editor editor = settings.edit();
                 editor.clear();
-                editor.putString("LapsPerMile", mLapsPerMileString);
-                editor.putBoolean("EnableGps", mEnableGps);
-                editor.putBoolean("CountLaps", mCountLaps);
+                editor.putString("LapsPerMile", trs.getLapsPerMileString());
+                editor.putString("StepsPerMile", trs.getStepsPerMileString());
+                editor.putBoolean("EnableGps", trs.getEnableGps());
+                editor.putBoolean("CountLaps", trs.getCountLaps());
                 editor.commit();
 
                 Toast.makeText(this, "Settings Updated", Toast.LENGTH_LONG).show();
@@ -646,7 +634,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         if (mHaveLocationPermission) {
-            if (mEnableGps) {
+            if (trs.mEnableGps) {
                 getLocation();
                 createLocationRequest();
                 startLocationUpdates();

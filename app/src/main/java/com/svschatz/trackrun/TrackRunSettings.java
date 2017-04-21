@@ -49,11 +49,19 @@ public class TrackRunSettings {
         return String.valueOf(mLapsPerMile);
     }
 
-    public double getStepsPerMile() {
+    public double getStepsPerMileDouble() {
         return mStepsPerMile;
     }
 
-    public void setmStepsPerMile(double spm) {
+    public String getStepsPerMileString() {
+        return String.valueOf(mStepsPerMile);
+    }
+
+    public void setStepsPerMile(double spm) {
         mStepsPerMile = spm;
+    }
+
+    public void setStepsPerMile(String spm) {
+        mStepsPerMile = Double.valueOf(spm);
     }
 }

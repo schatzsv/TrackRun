@@ -6,8 +6,10 @@
     <string name="section_format">%1$d</string>
     <string name="save">Save</string>
     <string name="laps_mile">Laps/Mile</string>
+    <string name="steps_mile">Steps/Mile</string>
     <string name="count_laps">Count Laps</string>
     <string name="count_miles">Count Miles</string>
     <string name="enable_gps">Enable GPS</string>
     <string name="default_lap_per_mile">13.4</string>
+    <string name="default_steps_per_mile">1462.0</string>
 </resources>

@@ -12,7 +12,6 @@ import static com.svschatz.trackrun.MainActivity.trs;
 
 public class Swe {
     String TAG = "Swe";
-    private double mLapsPerMile = 13.0;
     int state; //0 - none, 1 - reset, 2 - running, 3 - pause
     public class State {
         static final int NONE = 0;
@@ -59,16 +58,12 @@ public class Swe {
     double tenthNextDistance;
     long tenthLastTime;
     double tenthLastSteps;
-    double tenthPace;
+    double tenthPace; //steps per mile
     double tenthStepsPerMin;
 
     public Swe() {
         //System.out.println("Swe()");
         reset(System.currentTimeMillis());
-    }
-
-    public void setLapsPerMile(double lpm) {
-        mLapsPerMile = lpm;
     }
 
     public void reset(long ct) {
@@ -189,8 +184,8 @@ public class Swe {
                 lapTimeLast = et-lapTimeStart;
                 lapTimeStart = et;
                 lapTimeAvg = (double) et / (double) lapCount / 1000.0;
-                lapMphLast = 1.0 / (double) lapTimeLast * 3600000.0 / mLapsPerMile;
-                lapMphAvg = 1.0 / lapTimeAvg * 3600.0 / mLapsPerMile;
+                lapMphLast = 1.0 / (double) lapTimeLast * 3600000.0 / trs.mLapsPerMile;
+                lapMphAvg = 1.0 / lapTimeAvg * 3600.0 / trs.mLapsPerMile;
                 stepsLastLap = stepsCount - stepsLapStart;
                 stepsLapStart = stepsCount;
                 stepsSpmLastLap = stepsLastLap / ((double) lapTimeLast / 1000.0) * 60.0;
@@ -237,9 +232,6 @@ public class Swe {
     }
 
     public void doTenths() {
-        //todo code doTenths()
-        //todo save in state
-        // if not gone a tenth, return
         double d;
         if (trs.mEnableGps)
             d = gpsDistanceRun;
@@ -327,7 +319,7 @@ public class Swe {
     }
 
     public String getStringMiles() {
-        return String.format("Mi %.2f", lapCount / mLapsPerMile);
+        return String.format("Mi %.2f", lapCount / trs.mLapsPerMile);
     }
 
     public String getStringStepEstimatedMiles() {
@@ -355,7 +347,7 @@ public class Swe {
     }
 
     public String getStringLastLapPace() {
-        double pace = getLapTimeLast() * mLapsPerMile / 60f; //minutes per mile
+        double pace = getLapTimeLast() * trs.mLapsPerMile / 60f; //minutes per mile
         int paceMin = (int) Math.floor(pace);
         int paceSec = (int) Math.round(60f * (pace - paceMin));
         if (paceSec == 60) {
@@ -369,7 +361,7 @@ public class Swe {
         if (lapCount == 0) {
             return "P 0:00";
         }
-        double pace = (et / 60000.0) / (lapCount / mLapsPerMile); //minutes per mile
+        double pace = (et / 60000.0) / (lapCount / trs.mLapsPerMile); //minutes per mile
         int paceMin = (int) Math.floor(pace);
         int paceSec = (int) Math.round(60f * (pace - paceMin));
         if (paceSec == 60) {
@@ -400,7 +392,7 @@ public class Swe {
         if (getLaps() == 0 || stepsLapStart < 1.0) {
             return "Sl 0.0";
         }
-        sl = 63360.0*getLaps()/mLapsPerMile/stepsLapStart;
+        sl = 63360.0*getLaps()/trs.mLapsPerMile/stepsLapStart;
         if (sl > 1000.0) {
             sl = 0.0;
         }
@@ -408,7 +400,7 @@ public class Swe {
     }
 
     public String getStringAvgStepsPerMile() {
-        return String.format("pM %,d", Math.round(stepsLapStart/(getLaps()/mLapsPerMile)));
+        return String.format("pM %,d", Math.round(stepsLapStart/(getLaps()/trs.mLapsPerMile)));
     }
 
     public int getState() {
