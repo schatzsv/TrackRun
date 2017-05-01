@@ -912,7 +912,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         String fileName = makeLogFileName();
         MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
                 .setTitle(fileName)
-                .setMimeType("text/plain")
+                .setMimeType("text/csv")
                 .build();
         mLogFolder.asDriveFolder()
                 .createFile(mGoogleApiClient, changeSet, null)
