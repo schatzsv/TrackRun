@@ -6,14 +6,20 @@
         android:id="@+id/action_stop"
         android:orderInCategory="100"
         android:title="@string/action_stop"
-        app:showAsAction="always|withText" />
+        app:showAsAction="ifRoom|withText" />
+    <item
+        android:id="@+id/action_savelog"
+        android:orderInCategory="101"
+        android:title="@string/action_savelog"
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_reset"
-        android:orderInCategory="101"
-        android:title="@string/action_reset" />
+        android:orderInCategory="102"
+        android:title="@string/action_reset"
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_settings"
-        android:orderInCategory="102"
+        android:orderInCategory="103"
         android:title="@string/action_settings"
         app:showAsAction="never" />
 </menu>

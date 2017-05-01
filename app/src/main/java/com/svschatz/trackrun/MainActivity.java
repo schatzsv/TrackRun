@@ -14,6 +14,8 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.ParcelFileDescriptor;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -32,6 +34,18 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.drive.Drive;
+import com.google.android.gms.drive.DriveApi;
+import com.google.android.gms.drive.DriveContents;
+import com.google.android.gms.drive.DriveFile;
+import com.google.android.gms.drive.DriveFolder;
+import com.google.android.gms.drive.DriveId;
+import com.google.android.gms.drive.Metadata;
+import com.google.android.gms.drive.MetadataChangeSet;
+import com.google.android.gms.drive.query.Filters;
+import com.google.android.gms.drive.query.Query;
+import com.google.android.gms.drive.query.SearchableField;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
@@ -40,12 +54,19 @@ import com.google.android.gms.location.LocationSettingsResult;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Writer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener,
@@ -76,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     // intent codes
     static final int UPDATE_SETTINGS_REQUEST = 1000;
+    static final int SIGNIN_REQUIRED = 1001;
 
     // permission request codes
     static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 9090;
@@ -94,6 +116,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }
             }
             timerHandler.postDelayed(this, 100);
+        }
+    };
+
+    // logging timer - need a periodic log entry
+    Handler logTimerHandler = new Handler();
+    Runnable logTimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            doPeriodicLogging();
+            logTimerHandler.postDelayed(logTimerRunnable, 30000);
         }
     };
 
@@ -139,6 +171,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // Create an instance of GoogleAPIClient.
         doInitGoogleLocationApi();
+
+        // Set up cache file for logging
+        openLogCache();
 
         // Check location services permission
         doCheckLocationPermission();
@@ -219,10 +254,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     sw.start(System.currentTimeMillis());
                     timerHandler.postDelayed(timerRunnable, 0);
                     setButton("Lap", Color.GREEN);
+                    String timeStamp = new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date());
+                    timeStamp += sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
+                    appendLogCache("Start," + timeStamp);
                 } else if (sw.getState() == Swe.State.RUNNING) {
                     // Lap pressed
                     if (sw.getLapTimeCur() >= 8.0) {sw.lap(System.currentTimeMillis());
                         setButton("Lap", Color.GREEN);
+                        String logEntry = new SimpleDateFormat("'Lap',,HH:mm:ss,", Locale.US).format(new Date());
+                        logEntry += sw.lapCount + "," + sw.getLapTimeLast() + "," + sw.stepsLastLap + "\n";
+                        appendLogCache(logEntry);
                     }
                 } else {
                     // Resume pressed
@@ -234,6 +275,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     else {
                         setButton("Lap", Color.LTGRAY);
                     }
+                    String timeStamp = new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date());
+                    timeStamp += sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
+                    appendLogCache("Resume," + timeStamp);
                 }
                 if (mAverageFragment != null){
                     mAverageFragment.updateAverageDisplay();
@@ -267,6 +311,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (mFakeSteps) {
             fakeStepTimerHandler.postDelayed(fakeStepTimerRunnable, 0);
         }
+
+        // Start periodic logging
+        logTimerHandler.postDelayed(logTimerRunnable, 30000);
     }
 
     @Override
@@ -428,6 +475,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_stop) {
             onStopMenu();
+            String timeStamp = new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date());
+            timeStamp += sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
+            appendLogCache("Stop," + timeStamp);
+            return true;
+        } else if (id == R.id.action_savelog) {
+            saveLogToGoogleDrive();
             return true;
         } else if (id == R.id.action_reset) {
             onResetMenu();
@@ -497,6 +550,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             if (mLocationFragment != null) {
                 mLocationFragment.updateLocationDisplay();
+            }
+        }
+
+        if (requestCode == SIGNIN_REQUIRED) {
+            if (resultCode == RESULT_OK) {
+                Log.d(TAG, "RESULT_OK from signin resolution");
+                mGoogleApiClient.connect();
             }
         }
     }
@@ -597,6 +657,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
+        // clear log cache
+        clearLogCache();
+        // periodic logging
+        periodicLoggingLastDistance = 0.0;
     }
 
     public void setButton(CharSequence text, int color) {
@@ -622,6 +686,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
+                    .addApi(Drive.API)
+                    .addScope(Drive.SCOPE_FILE)
                     .build();
         }
     }
@@ -647,6 +713,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // Refer to the javadoc for ConnectionResult to see what error codes might be returned in
         // onConnectionFailed.
         Log.d(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + result.getErrorCode());
+        if (result.hasResolution()) {
+            try {
+                result.startResolutionForResult(this, SIGNIN_REQUIRED);
+            }
+            catch (android.content.IntentSender.SendIntentException e) {
+                Log.d(TAG, "Exception from connectionFailed resolution");
+            }
+        }
     }
 
     @Override
@@ -707,6 +781,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
+        String logEntry = "GPS,,," + l.getLatitude() + "," + l.getLongitude() + ","
+                + l.getAltitude() + "," + l.getSpeed() + "," + l.getBearing() + ","
+                + l.getAccuracy() + "," + l.getTime() + "\n";
+        appendLogCache(logEntry);
     }
 
     protected void getLocation() {
@@ -716,6 +794,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (l == null) return;
             sw.gps(l.getLatitude(), l.getLongitude(),l.getAltitude(), l.getSpeed(), l.getBearing(),
                     l.getAccuracy(), l.getTime());
+            String logEntry = "GPS,,," + l.getLatitude() + "," + l.getLongitude() + ","
+                    + l.getAltitude() + "," + l.getSpeed() + "," + l.getBearing() + ","
+                    + l.getAccuracy() + "," + l.getTime() + "\n";
+            appendLogCache(logEntry);
         }
         catch (SecurityException e) {
             Log.d(TAG, "getLocation() security exception last location");
@@ -755,4 +837,184 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient,
                         builder.build());
     }
+
+
+
+    /*
+     * Fields and methods for using google document APIs to log application data to a file.  Google
+     * play services must be initialized first.
+     */
+
+    final String DIR_NAME = "TrackRun";
+    DriveId mLogFolder;
+    DriveFile mLogFile;
+    DriveContents mLogFileContents;
+    ParcelFileDescriptor mLogFilePFD;
+    File logToSave;
+
+    String makeLogFileName() {
+        String logFileName = new SimpleDateFormat("yyyyMMdd-HH:mm:ss'.csv'").format(new Date());
+        return logFileName;
+    }
+
+    void saveLog(File f) {
+        logToSave = f;
+        getGdrFolder();
+    }
+
+    // getGdrFolder() - get the folder that contains log file, creates if necessary
+    // createLogFile() - called by get folder to create log file
+    // writeToLogFile(String) - open file, get and write cache data, commit and close
+
+    void getGdrFolder() {
+        Query query = new Query.Builder()
+                .addFilter(Filters.and(
+                        Filters.eq(SearchableField.TITLE, DIR_NAME),
+                        Filters.eq(SearchableField.TRASHED, false)))
+                .build();
+        Drive.DriveApi.query(mGoogleApiClient, query)
+                .setResultCallback(new ResultCallback<DriveApi.MetadataBufferResult>() {
+                    @Override
+                    public void onResult(@NonNull DriveApi.MetadataBufferResult result) {
+                        if (!result.getStatus().isSuccess()) {
+                            Log.d(TAG, "getGdrFolder() query failed");
+                            return;
+                        }
+                        for (Metadata m : result.getMetadataBuffer()) {
+                            if (m.getTitle().equals(DIR_NAME) && m.isFolder()) {
+                                mLogFolder = m.getDriveId();
+                                createLogFile();
+                                return;
+                            }
+                        }
+                        MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                                .setTitle(DIR_NAME)
+                                .build();
+                        Drive.DriveApi.getRootFolder(mGoogleApiClient)
+                                .createFolder(mGoogleApiClient, changeSet)
+                                .setResultCallback(new ResultCallback<DriveFolder.DriveFolderResult>() {
+                                    @Override
+                                    public void onResult(@NonNull DriveFolder.DriveFolderResult result) {
+                                        if (!result.getStatus().isSuccess()) {
+                                            Log.d(TAG, "getFolder() create log folder failed");
+                                        } else {
+                                            mLogFolder = result.getDriveFolder().getDriveId();
+                                            createLogFile();
+                                        }
+                                    }
+                                });
+                    }
+                });
+    }
+
+    void createLogFile() {
+        //create empty log file
+        String fileName = makeLogFileName();
+        MetadataChangeSet changeSet = new MetadataChangeSet.Builder()
+                .setTitle(fileName)
+                .setMimeType("text/plain")
+                .build();
+        mLogFolder.asDriveFolder()
+                .createFile(mGoogleApiClient, changeSet, null)
+                .setResultCallback(new ResultCallback<DriveFolder.DriveFileResult>() {
+                    @Override
+                    public void onResult(@NonNull DriveFolder.DriveFileResult driveFileResult) {
+                        if (!driveFileResult.getStatus().isSuccess()) {
+                            Log.d(TAG, "createLogFile() file create error");
+                        } else {
+                            mLogFile = driveFileResult.getDriveFile();
+                            writeToLogFile();
+                        }
+                    }
+                });
+    }
+
+    void writeToLogFile() {
+        mLogFile.open(mGoogleApiClient, DriveFile.MODE_WRITE_ONLY, null)
+                .setResultCallback(new ResultCallback<DriveApi.DriveContentsResult>() {
+                    @Override
+                    public void onResult(@NonNull DriveApi.DriveContentsResult driveContentsResult) {
+                        if (!driveContentsResult.getStatus().isSuccess()) {
+                            Log.d(TAG, "openLogFile() file create error");
+                        } else {
+                            mLogFileContents = driveContentsResult.getDriveContents();
+                            mLogFilePFD = mLogFileContents.getParcelFileDescriptor();
+                            try {
+                                FileOutputStream fileOutputStream = new FileOutputStream(mLogFilePFD.getFileDescriptor());
+                                Writer writer = new OutputStreamWriter(fileOutputStream);
+                                BufferedReader br = new BufferedReader(new FileReader(logToSave));
+                                String line;
+                                while ((line = br.readLine()) != null) {
+                                    writer.write(line + "\n");
+                                }
+                                writer.close();
+                            } catch (IOException e) {
+                                Log.d(TAG, "writeToLogFile() IOException");
+                            }
+                            mLogFileContents.commit(mGoogleApiClient, null);
+                        }
+                    }
+                });
+    }
+
+    /*
+     * Periodic logging fields and methods
+     */
+
+    double periodicLoggingLastDistance;
+
+    void doPeriodicLogging() {
+        if (periodicLoggingLastDistance != sw.tenthLastDistance) {
+            String logEntry = "Tenth,,," + sw.tenthLastDistance + ","
+                        + sw.tenthLastTime + ","
+                        + sw.tenthLastSteps + ","
+                        + sw.gpsDistanceRun + ","
+                        + sw.et + ","
+                        + sw.stepsCount + "\n";
+            periodicLoggingLastDistance = sw.tenthLastDistance;
+            appendLogCache(logEntry);
+        }
+        String logEntry = "30Sec,,," + sw.getDistance() + ","
+                + sw.et + "," + sw.stepsCount + "\n";
+        appendLogCache(logEntry);
+    }
+
+    /*
+     * Fields and methods associated with internal storage. Internal storage is used to capture
+     * data that is eventually saved to a Google Drive file. This implementation uses device cache.
+     */
+
+    String CACHE_FILE_NAME = "TrackRunLog";
+    File logFile;
+
+    void openLogCache() {
+        logFile = new File(getCacheDir(), CACHE_FILE_NAME);
+    }
+
+    public void appendLogCache(String l) {
+        try {
+            FileOutputStream fos = new FileOutputStream(logFile, true);
+            fos.write(l.getBytes());
+            fos.close();
+        }
+        catch (FileNotFoundException e) {
+            Log.d(TAG, "appendLogCache() cache file not found");
+        }
+        catch (IOException e) {
+            Log.d(TAG, "appendLogCache() IO exception");
+        }
+    }
+
+    void saveLogToGoogleDrive() {
+        saveLog(logFile);
+    }
+
+    void clearLogCache() {
+        if (logFile.delete()) {
+            logFile = new File(getCacheDir(), CACHE_FILE_NAME);
+        } else {
+            Log.d(TAG, "clearLogCache() could not delete cache file");
+        }
+    }
+
 }

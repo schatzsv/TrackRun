@@ -254,6 +254,16 @@ public class Swe {
         }
     }
 
+    public float getDistance() {
+        if (trs.mEnableGps) {
+            return gpsDistanceRun;
+        }
+        if (trs.getCountLaps()) {
+            return (float) (lapCount / trs.mLapsPerMile);
+        }
+        return (float) stepsEstimatedMiles;
+    }
+
     public String getStringTenthPace() {
         long t = Math.round(tenthPace);
         long s = t % 60;
