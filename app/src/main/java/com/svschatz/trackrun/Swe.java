@@ -1,9 +1,13 @@
 package com.svschatz.trackrun;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
+import static com.svschatz.trackrun.MainActivity.sw;
 import static com.svschatz.trackrun.MainActivity.trs;
 
 /**
@@ -18,6 +22,16 @@ public class Swe {
         static final int RESET = 1;
         static final int RUNNING = 2;
         static final int PAUSE = 3;
+    }
+    public class LogRec {
+        static final int START = 1;
+        static final int RESUME = 2;
+        static final int STOP = 3;
+        static final int LAP = 4;
+        static final int TENTH = 5;
+        static final int SEC30 = 6;
+        static final int GPS = 7;
+        static final int HEADER = 8;
     }
     long et; //elapsed time in ms
     long ctLast; //last ct value received, ct in ms
@@ -561,6 +575,39 @@ public class Swe {
             i++;
         }
         return true;
+    }
+
+    String getStringLogRec(int type) {
+        switch (type) {
+            case LogRec.HEADER:
+                return "Type,Date,Time,Dist,ET,Steps,Laps,LapTime,LapSteps\n";
+            case LogRec.SEC30:
+                if (state == State.RUNNING) {
+                    return "30Sec,,," + sw.getDistance() + ","
+                            + sw.et + "," + sw.stepsCount + "\n";
+                } else {
+                    return "";
+                }
+            case LogRec.START:
+                return "Start,"
+                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                        + sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
+            case LogRec.RESUME:
+                return "Resume,"
+                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                        + sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
+            case LogRec.STOP:
+                return "Stop,"
+                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                        + sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
+            case LogRec.LAP:
+                return "Lap,,"
+                        + new SimpleDateFormat("HH:mm:ss,", Locale.US).format(new Date())
+                        + ",,,"
+                        + sw.lapCount + "," + sw.getLapTimeLast() + "," + sw.stepsLastLap + "\n";
+            default:
+                return "Log Error Invalid Type\n";
+        }
     }
 
 }

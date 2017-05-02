@@ -254,16 +254,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     sw.start(System.currentTimeMillis());
                     timerHandler.postDelayed(timerRunnable, 0);
                     setButton("Lap", Color.GREEN);
-                    String timeStamp = new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date());
-                    timeStamp += sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
-                    appendLogCache("Start," + timeStamp);
+                    appendLogCache(sw.getStringLogRec(Swe.LogRec.START));
                 } else if (sw.getState() == Swe.State.RUNNING) {
                     // Lap pressed
                     if (sw.getLapTimeCur() >= 8.0) {sw.lap(System.currentTimeMillis());
                         setButton("Lap", Color.GREEN);
-                        String logEntry = new SimpleDateFormat("'Lap',,HH:mm:ss,", Locale.US).format(new Date());
-                        logEntry += sw.lapCount + "," + sw.getLapTimeLast() + "," + sw.stepsLastLap + "\n";
-                        appendLogCache(logEntry);
+                        appendLogCache(sw.getStringLogRec(Swe.LogRec.LAP));
                     }
                 } else {
                     // Resume pressed
@@ -275,9 +271,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     else {
                         setButton("Lap", Color.LTGRAY);
                     }
-                    String timeStamp = new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date());
-                    timeStamp += sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
-                    appendLogCache("Resume," + timeStamp);
+                    appendLogCache(sw.getStringLogRec(Swe.LogRec.RESUME));
                 }
                 if (mAverageFragment != null){
                     mAverageFragment.updateAverageDisplay();
@@ -475,9 +469,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_stop) {
             onStopMenu();
-            String timeStamp = new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date());
-            timeStamp += sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
-            appendLogCache("Stop," + timeStamp);
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.STOP));
             return true;
         } else if (id == R.id.action_savelog) {
             saveLogToGoogleDrive();
@@ -964,19 +956,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     double periodicLoggingLastDistance;
 
     void doPeriodicLogging() {
-        if (periodicLoggingLastDistance != sw.tenthLastDistance) {
-            String logEntry = "Tenth,,," + sw.tenthLastDistance + ","
+        if (!trs.mCountLaps) {
+            if (periodicLoggingLastDistance != sw.tenthLastDistance) {
+                String logEntry = "Tenth,,," + sw.tenthLastDistance + ","
                         + sw.tenthLastTime + ","
                         + sw.tenthLastSteps + ","
                         + sw.gpsDistanceRun + ","
                         + sw.et + ","
                         + sw.stepsCount + "\n";
-            periodicLoggingLastDistance = sw.tenthLastDistance;
-            appendLogCache(logEntry);
+                periodicLoggingLastDistance = sw.tenthLastDistance;
+                appendLogCache(logEntry);
+            }
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.SEC30));
         }
-        String logEntry = "30Sec,,," + sw.getDistance() + ","
-                + sw.et + "," + sw.stepsCount + "\n";
-        appendLogCache(logEntry);
     }
 
     /*
@@ -986,12 +978,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     String CACHE_FILE_NAME = "TrackRunLog";
     File logFile;
+    static final class LOG_REC {
+        int Start = 1;
+    }
 
     void openLogCache() {
         logFile = new File(getCacheDir(), CACHE_FILE_NAME);
     }
 
     public void appendLogCache(String l) {
+        if (l.isEmpty()) return;
         try {
             FileOutputStream fos = new FileOutputStream(logFile, true);
             fos.write(l.getBytes());
@@ -1012,6 +1008,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     void clearLogCache() {
         if (logFile.delete()) {
             logFile = new File(getCacheDir(), CACHE_FILE_NAME);
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.HEADER));
         } else {
             Log.d(TAG, "clearLogCache() could not delete cache file");
         }
