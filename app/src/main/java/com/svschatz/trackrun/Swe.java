@@ -1,5 +1,7 @@
 package com.svschatz.trackrun;
 
+import android.util.Log;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,7 +17,7 @@ import static com.svschatz.trackrun.MainActivity.trs;
  */
 
 public class Swe {
-    String TAG = "Swe";
+    String TAG = "TrackRunSwe";
     int state; //0 - none, 1 - reset, 2 - running, 3 - pause
     public class State {
         static final int NONE = 0;
@@ -29,7 +31,7 @@ public class Swe {
         static final int STOP = 3;
         static final int LAP = 4;
         static final int TENTH = 5;
-        static final int SEC30 = 6;
+        static final int SEC20 = 6;
         static final int GPS = 7;
         static final int HEADER = 8;
     }
@@ -111,15 +113,15 @@ public class Swe {
         lapMphAvg = 0;
         laps.clear();
 
-        //gps related
-        gpsDistanceRun = (float) 0.0;
-        gpsLatLast = 0.0;
-        gpsLonLast = 0.0;
-        gpsAltLast = 0.0;
-        gpsSpdLast = (float) 0.0;
-        gpsHdgLast = (float) 0.0;
-        gpsAccLast = (float) 0.0;
-        gpsTimeLast = 0;
+        //gps related - Don't clear GPS data since last position is valid at reset
+        //gpsDistanceRun = (float) 0.0;
+        //gpsLatLast = 0.0;
+        //gpsLonLast = 0.0;
+        //gpsAltLast = 0.0;
+        //gpsSpdLast = (float) 0.0;
+        //gpsHdgLast = (float) 0.0;
+        //gpsAccLast = (float) 0.0;
+        //gpsTimeLast = 0;
 
         //tenth mile related
         tenthLastDistance = 0.0;
@@ -212,6 +214,7 @@ public class Swe {
 
     public void gps(double lat, double lon, double alt,
                     float spd, float hdg, float acc, long time) {
+        Log.d(TAG, "gps()");
         switch (state) {
             case State.RUNNING:
                 if (gpsTimeLast != 0) {
@@ -247,6 +250,7 @@ public class Swe {
 
     public void doTenths() {
         double d;
+        // todo tenth has to store the data for the last tenth, not just cum data
         if (trs.mEnableGps)
             d = gpsDistanceRun;
         else
@@ -579,32 +583,50 @@ public class Swe {
 
     String getStringLogRec(int type) {
         switch (type) {
-            case LogRec.HEADER:
-                return "Type,Date,Time,Dist,ET,Steps,Laps,LapTime,LapSteps\n";
-            case LogRec.SEC30:
+            case LogRec.GPS:
                 if (state == State.RUNNING) {
-                    return "30Sec,,," + sw.getDistance() + ","
-                            + sw.et + "," + sw.stepsCount + "\n";
+                    return "GPS,,,,,,,,," + gpsLatLast + "," + gpsLonLast + ","
+                            + gpsAltLast + "," + gpsSpdLast + "," + gpsHdgLast + ","
+                            + gpsAccLast + "," + gpsTimeLast + "\n";
                 } else {
                     return "";
                 }
-            case LogRec.START:
-                return "Start,"
-                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
-                        + sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
-            case LogRec.RESUME:
-                return "Resume,"
-                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
-                        + sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
-            case LogRec.STOP:
-                return "Stop,"
-                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
-                        + sw.getDistance() + "," + sw.et + "," + sw.stepsCount + "\n";
+            case LogRec.SEC20:
+                if (state == State.RUNNING) {
+                    return "20Sec,,," + getDistance() + ","
+                            + et + "," + stepsCount + "\n";
+                } else {
+                    return "";
+                }
+            case LogRec.TENTH:
+                // todo tenth needs to log data for lat tenth, not just cum data
+                return "Tenth,,,"
+                        + gpsDistanceRun + ","
+                        + et + ","
+                        + stepsCount + ","
+                        + tenthLastDistance + ","
+                        + tenthLastTime + ","
+                        + tenthLastSteps + "\n";
             case LogRec.LAP:
                 return "Lap,,"
                         + new SimpleDateFormat("HH:mm:ss,", Locale.US).format(new Date())
                         + ",,,"
-                        + sw.lapCount + "," + sw.getLapTimeLast() + "," + sw.stepsLastLap + "\n";
+                        + lapCount + "," + getLapTimeLast() + "," + stepsLastLap + "\n";
+            case LogRec.START:
+                return "Start,"
+                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                        + getDistance() + "," + et + "," + stepsCount + "\n";
+            case LogRec.RESUME:
+                return "Resume,"
+                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                        + getDistance() + "," + et + "," + stepsCount + "\n";
+            case LogRec.STOP:
+                return "Stop,"
+                        + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                        + getDistance() + "," + et + "," + stepsCount + "\n";
+            case LogRec.HEADER:
+                return "Type,Date,Time,Dist,ET,Steps,Laps,LapTime,LapSteps,Lat,Lon,Alt,Spd,Hdg"
+                        + ",Accur,GPStime\n";
             default:
                 return "Log Error Invalid Type\n";
         }

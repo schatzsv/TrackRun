@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void run() {
             doPeriodicLogging();
-            logTimerHandler.postDelayed(logTimerRunnable, 30000);
+            logTimerHandler.postDelayed(logTimerRunnable, 20000);
         }
     };
 
@@ -255,6 +255,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     timerHandler.postDelayed(timerRunnable, 0);
                     setButton("Lap", Color.GREEN);
                     appendLogCache(sw.getStringLogRec(Swe.LogRec.START));
+                    if (trs.mEnableGps) {
+                        appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
+                    }
                 } else if (sw.getState() == Swe.State.RUNNING) {
                     // Lap pressed
                     if (sw.getLapTimeCur() >= 8.0) {sw.lap(System.currentTimeMillis());
@@ -272,6 +275,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         setButton("Lap", Color.LTGRAY);
                     }
                     appendLogCache(sw.getStringLogRec(Swe.LogRec.RESUME));
+                    if (trs.mEnableGps) {
+                        appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
+                    }
                 }
                 if (mAverageFragment != null){
                     mAverageFragment.updateAverageDisplay();
@@ -773,10 +779,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
-        String logEntry = "GPS,,," + l.getLatitude() + "," + l.getLongitude() + ","
-                + l.getAltitude() + "," + l.getSpeed() + "," + l.getBearing() + ","
-                + l.getAccuracy() + "," + l.getTime() + "\n";
-        appendLogCache(logEntry);
+        appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
     }
 
     protected void getLocation() {
@@ -786,10 +789,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (l == null) return;
             sw.gps(l.getLatitude(), l.getLongitude(),l.getAltitude(), l.getSpeed(), l.getBearing(),
                     l.getAccuracy(), l.getTime());
-            String logEntry = "GPS,,," + l.getLatitude() + "," + l.getLongitude() + ","
-                    + l.getAltitude() + "," + l.getSpeed() + "," + l.getBearing() + ","
-                    + l.getAccuracy() + "," + l.getTime() + "\n";
-            appendLogCache(logEntry);
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
         }
         catch (SecurityException e) {
             Log.d(TAG, "getLocation() security exception last location");
@@ -958,16 +958,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     void doPeriodicLogging() {
         if (!trs.mCountLaps) {
             if (periodicLoggingLastDistance != sw.tenthLastDistance) {
-                String logEntry = "Tenth,,," + sw.tenthLastDistance + ","
-                        + sw.tenthLastTime + ","
-                        + sw.tenthLastSteps + ","
-                        + sw.gpsDistanceRun + ","
-                        + sw.et + ","
-                        + sw.stepsCount + "\n";
                 periodicLoggingLastDistance = sw.tenthLastDistance;
-                appendLogCache(logEntry);
+                appendLogCache(sw.getStringLogRec(Swe.LogRec.TENTH));
             }
-            appendLogCache(sw.getStringLogRec(Swe.LogRec.SEC30));
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.SEC20));
         }
     }
 
