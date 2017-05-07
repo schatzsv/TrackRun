@@ -12,9 +12,9 @@ import android.widget.RadioButton;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    Button b;
+    //Button b;
     EditText lpm, spm;
-    CheckBox egps;
+    CheckBox egps, fe;
     RadioButton cl, cm;
 
     @Override
@@ -36,6 +36,8 @@ public class SettingsActivity extends AppCompatActivity {
         cl.setChecked(getIntent().getBooleanExtra("COUNT_LAPS", true));
         cm = (RadioButton) findViewById(R.id.radioButton_countMiles);
         cm.setChecked(!getIntent().getBooleanExtra("COUNT_LAPS", true));
+        fe = (CheckBox) findViewById(R.id.checkBox_fakeEvents);
+        fe.setChecked(getIntent().getBooleanExtra("FAKE_EVENTS", true));
 
         Button button = (Button) findViewById(R.id.button_saveSettings);
         button.setOnClickListener(new View.OnClickListener() {
@@ -54,6 +56,7 @@ public class SettingsActivity extends AppCompatActivity {
         intent.putExtra("STEPS_PER_MILE", spm.getText().toString());
         intent.putExtra("ENABLE_GPS", egps.isChecked());
         intent.putExtra("COUNT_LAPS", cl.isChecked());
+        intent.putExtra("FAKE_EVENTS", fe.isChecked());
         setResult(RESULT_OK, intent);
         finish();
     }

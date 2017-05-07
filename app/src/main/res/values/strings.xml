@@ -13,4 +13,5 @@
     <string name="enable_gps">Enable GPS</string>
     <string name="default_lap_per_mile">13.4</string>
     <string name="default_steps_per_mile">1462.0</string>
+    <string name="fake_events">Fake Events Debug</string>
 </resources>

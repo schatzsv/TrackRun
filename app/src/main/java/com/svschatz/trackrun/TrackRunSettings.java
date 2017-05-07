@@ -9,12 +9,14 @@ public class TrackRunSettings {
     boolean mCountLaps;
     double mLapsPerMile;
     double mStepsPerMile;
+    boolean mFakeEvents;
 
     public TrackRunSettings() {
         mEnableGps = false;
         mCountLaps = true;
         mLapsPerMile = 13.0;
         mStepsPerMile = 1462.0;
+        mFakeEvents = false;
     }
 
     public void setEnableGps(boolean s) {
@@ -63,5 +65,13 @@ public class TrackRunSettings {
 
     public void setStepsPerMile(String spm) {
         mStepsPerMile = Double.valueOf(spm);
+    }
+
+    public void setFakeEvents(boolean s) {
+        mFakeEvents = s;
+    }
+
+    public boolean getFakeEvents() {
+        return mFakeEvents;
     }
 }

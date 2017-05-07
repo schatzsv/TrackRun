@@ -31,9 +31,10 @@ public class Swe {
         static final int STOP = 3;
         static final int LAP = 4;
         static final int TENTH = 5;
-        static final int SEC20 = 6;
+        static final int SEC30 = 6;
         static final int GPS = 7;
         static final int HEADER = 8;
+        static final int STEP = 9;
     }
     long et; //elapsed time in ms
     long ctLast; //last ct value received, ct in ms
@@ -70,12 +71,13 @@ public class Swe {
     long gpsTimeLast; //gps time mS UTC
     float gpsDistanceRun; //calculated run distance in miles
 
-    double tenthLastDistance;
-    double tenthNextDistance;
-    long tenthLastTime;
-    double tenthLastSteps;
-    double tenthPace; //steps per mile
-    double tenthStepsPerMin;
+    double tenthCurDistance, tenthCumDistance; //distance at last tenth
+    double tenthNextDistance; //trigger for next calculation
+    long tenthCurTime, tenthCumTime; //et at last tenth
+    double tenthCurSteps, tenthCumSteps; //step count
+    double tenthCurPace, tenthCumPace; //seconds per mile
+    double tenthCurStepRate, tenthCumStepRate; //steps per minute
+
 
     public Swe() {
         //System.out.println("Swe()");
@@ -113,8 +115,8 @@ public class Swe {
         lapMphAvg = 0;
         laps.clear();
 
-        //gps related - Don't clear GPS data since last position is valid at reset
-        //gpsDistanceRun = (float) 0.0;
+        //gps related - Don't clear GPS rdvr data since last position is valid at reset
+        gpsDistanceRun = (float) 0.0;
         //gpsLatLast = 0.0;
         //gpsLonLast = 0.0;
         //gpsAltLast = 0.0;
@@ -124,12 +126,17 @@ public class Swe {
         //gpsTimeLast = 0;
 
         //tenth mile related
-        tenthLastDistance = 0.0;
+        tenthCurDistance = 0.0;
+        tenthCumDistance = 0.0;
         tenthNextDistance = 0.1;
-        tenthLastTime = 0;
-        tenthLastSteps = 0.0;
-        tenthPace = 0.0;
-        tenthStepsPerMin = 0.0;
+        tenthCurTime = 0;
+        tenthCumTime = 0;
+        tenthCurSteps = 0.0;
+        tenthCumSteps = 0.0;
+        tenthCurPace = 0.0;
+        tenthCumPace = 0.0;
+        tenthCurStepRate = 0.0;
+        tenthCumStepRate = 0.0;
 
     }
 
@@ -250,25 +257,29 @@ public class Swe {
 
     public void doTenths() {
         double d;
-        // todo tenth has to store the data for the last tenth, not just cum data
+
         if (trs.mEnableGps)
             d = gpsDistanceRun;
         else
             d = stepsEstimatedMiles;
         if (d >= tenthNextDistance) {
-            // recalculate stats for the last tenth of a mile
-            // tenthPace [s/mi]
-            // tenthStepsPerMin [st/mi]
-            long t = et - tenthLastTime;
-            double s = stepsCount - tenthLastSteps;
-            double di = d - tenthLastDistance;
-            tenthPace = t/1000/di;
-            tenthStepsPerMin = s/((double)t/1000/60);
 
-            tenthLastDistance = d;
+            tenthCurDistance = d - tenthCumDistance;
+            tenthCumDistance = d;
+
             tenthNextDistance += 0.1;
-            tenthLastTime = et;
-            tenthLastSteps = stepsCount;
+
+            tenthCurTime = et - tenthCumTime;
+            tenthCumTime = et;
+
+            tenthCurSteps = stepsCount - tenthCumSteps;
+            tenthCumSteps = stepsCount;
+
+            tenthCurPace = tenthCurTime/1000/tenthCurDistance;
+            tenthCumPace = tenthCumTime/1000/tenthCumDistance;
+
+            tenthCurStepRate = tenthCurSteps/((double)tenthCurTime/1000/60);
+            tenthCumStepRate = tenthCumSteps/((double)tenthCumTime/1000/60);
         }
     }
 
@@ -283,14 +294,14 @@ public class Swe {
     }
 
     public String getStringTenthPace() {
-        long t = Math.round(tenthPace);
+        long t = Math.round(tenthCurPace);
         long s = t % 60;
         long m = t / 60;
         return String.format("%d:%02d", m,s);
     }
 
     public String getStringTenthStepRate() {
-        return String.format("%.1f", tenthStepsPerMin);
+        return String.format("%.1f", tenthCurStepRate);
     }
 
     public String getStringGpsHeading() {
@@ -482,7 +493,7 @@ public class Swe {
 
     public Map<String, String> getInternalState() {
         Map<String, String> m = new HashMap<String, String>();
-        m.put("ver", "0.7");
+        m.put("ver", "0.8");
         m.put("state", Integer.toString(state));
         m.put("et", Long.toString(et));
         m.put("ctLast", Long.toString(ctLast));
@@ -510,12 +521,17 @@ public class Swe {
         m.put("gpsAccLast", Float.toString(gpsAccLast));
         m.put("gpsTimeLast", Long.toString(gpsTimeLast));
         m.put("gpsDistanceRun", Float.toString(gpsDistanceRun));
-        m.put("tenthLastDistance", Double.toString(tenthLastDistance));
+        m.put("tenthCurDistance", Double.toString(tenthCurDistance));
+        m.put("tenthCumDistance", Double.toString(tenthCumDistance));
         m.put("tenthNextDistance", Double.toString(tenthNextDistance));
-        m.put("tenthLastTime", Long.toString(tenthLastTime));
-        m.put("tenthLastSteps", Double.toString(tenthLastSteps));
-        m.put("tenthPace", Double.toString(tenthPace));
-        m.put("tenthStepsPerMin", Double.toString(tenthStepsPerMin));
+        m.put("tenthCurTime", Long.toString(tenthCurTime));
+        m.put("tenthCumTime", Long.toString(tenthCumTime));
+        m.put("tenthCurSteps", Double.toString(tenthCurSteps));
+        m.put("tenthCumSteps", Double.toString(tenthCumSteps));
+        m.put("tenthCurPace", Double.toString(tenthCurPace));
+        m.put("tenthCumPace", Double.toString(tenthCumPace));
+        m.put("tenthCurStepRate", Double.toString(tenthCurStepRate));
+        m.put("tenthCumStepRate", Double.toString(tenthCumStepRate));
         for (Lap l : laps) {
             String v = "";
             v += Integer.toString(l.number) + ":";
@@ -529,7 +545,7 @@ public class Swe {
 
     public boolean setInternalState(Map<String, String> m) {
         if (!m.containsKey("ver")) return false;
-        if (!m.get("ver").contentEquals("0.7")) return false;
+        if (!m.get("ver").contentEquals("0.8")) return false;
         state = Integer.valueOf(m.get("state"));
         et = Long.valueOf(m.get("et"));
         ctLast = Long.valueOf(m.get("ctLast"));
@@ -557,12 +573,17 @@ public class Swe {
         gpsAccLast = Float.valueOf(m.get("gpsAccLast"));
         gpsTimeLast = Long.valueOf(m.get("gpsTimeLast"));
         gpsDistanceRun = Float.valueOf(m.get("gpsDistanceRun"));
-        tenthLastDistance = Double.valueOf(m.get("tenthLastDistance"));
+        tenthCurDistance = Double.valueOf(m.get("tenthCurDistance"));
+        tenthCumDistance = Double.valueOf(m.get("tenthCumDistance"));
         tenthNextDistance = Double.valueOf(m.get("tenthNextDistance"));
-        tenthLastTime = Long.valueOf(m.get("tenthLastTime"));
-        tenthLastSteps = Double.valueOf(m.get("tenthLastSteps"));
-        tenthPace = Double.valueOf(m.get("tenthPace"));
-        tenthStepsPerMin = Double.valueOf(m.get("tenthStepsPerMin"));
+        tenthCurTime = Long.valueOf(m.get("tenthCurTime"));
+        tenthCumTime = Long.valueOf(m.get("tenthCumTime"));
+        tenthCurSteps = Double.valueOf(m.get("tenthCurSteps"));
+        tenthCumSteps = Double.valueOf(m.get("tenthCumSteps"));
+        tenthCurPace = Double.valueOf(m.get("tenthCurPace"));
+        tenthCumPace = Double.valueOf(m.get("tenthCumPace"));
+        tenthCurStepRate = Double.valueOf(m.get("tenthCurStepRate"));
+        tenthCumStepRate = Double.valueOf(m.get("tenthCumStepRate"));
 
         laps.clear();
         int i = 1;
@@ -583,6 +604,12 @@ public class Swe {
 
     String getStringLogRec(int type) {
         switch (type) {
+            case LogRec.STEP:
+                if (state == State.RUNNING) {
+                    return "Step,,,," + stepsTimeLastUpdate + "," + stepsCount + "\n";
+                } else {
+                    return "";
+                }
             case LogRec.GPS:
                 if (state == State.RUNNING) {
                     return "GPS,,,,,,,,," + gpsLatLast + "," + gpsLonLast + ","
@@ -591,22 +618,21 @@ public class Swe {
                 } else {
                     return "";
                 }
-            case LogRec.SEC20:
+            case LogRec.SEC30:
                 if (state == State.RUNNING) {
-                    return "20Sec,,," + getDistance() + ","
+                    return "30Sec,,," + getDistance() + ","
                             + et + "," + stepsCount + "\n";
                 } else {
                     return "";
                 }
             case LogRec.TENTH:
-                // todo tenth needs to log data for lat tenth, not just cum data
                 return "Tenth,,,"
-                        + gpsDistanceRun + ","
-                        + et + ","
-                        + stepsCount + ","
-                        + tenthLastDistance + ","
-                        + tenthLastTime + ","
-                        + tenthLastSteps + "\n";
+                        + tenthCumDistance + ","
+                        + tenthCumTime + ","
+                        + tenthCumSteps + ","
+                        + tenthCurDistance + ","
+                        + tenthCurTime + ","
+                        + tenthCurSteps + "\n";
             case LogRec.LAP:
                 return "Lap,,"
                         + new SimpleDateFormat("HH:mm:ss,", Locale.US).format(new Date())
