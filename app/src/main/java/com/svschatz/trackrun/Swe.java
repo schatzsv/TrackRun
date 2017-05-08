@@ -115,15 +115,16 @@ public class Swe {
         lapMphAvg = 0;
         laps.clear();
 
-        //gps related - Don't clear GPS rdvr data since last position is valid at reset
+        //gps related
+        // todo - should these be cleared on reset?
         gpsDistanceRun = (float) 0.0;
-        //gpsLatLast = 0.0;
-        //gpsLonLast = 0.0;
-        //gpsAltLast = 0.0;
-        //gpsSpdLast = (float) 0.0;
-        //gpsHdgLast = (float) 0.0;
-        //gpsAccLast = (float) 0.0;
-        //gpsTimeLast = 0;
+        gpsLatLast = 0.0;
+        gpsLonLast = 0.0;
+        gpsAltLast = 0.0;
+        gpsSpdLast = (float) 0.0;
+        gpsHdgLast = (float) 0.0;
+        gpsAccLast = (float) 0.0;
+        gpsTimeLast = 0;
 
         //tenth mile related
         tenthCurDistance = 0.0;
@@ -225,6 +226,9 @@ public class Swe {
         switch (state) {
             case State.RUNNING:
                 if (gpsTimeLast != 0) {
+                    // call tick() so that et lines up with gps distance
+                    long t = System.currentTimeMillis();
+                    tick(t);
                     double lat1, lat2, lon1, lon2;
                     lat1 = gpsLatLast * Math.PI / 180.0;
                     lat2 = lat * Math.PI / 180.0;

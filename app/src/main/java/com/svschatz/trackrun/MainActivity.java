@@ -73,7 +73,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         com.google.android.gms.location.LocationListener {
 
-
+    //todo put lat/lon, maybe all current gps data in to start/stop/resume
+    //todo verify good gps on start, alert if not good gps (and gps is enabled)
+    //todo don't display Infinity or NaN on log/average/location sreens
 
     protected static final String TAG = "TrackRun";
 
@@ -298,10 +300,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 break;
         }
 
-        // Start fake event timer
-        if (trs.mFakeEvents && sw.getState() == Swe.State.RUNNING) {
-            startFakeTimers();
-        }
+        // Start fake event timers
+        startFakeTimers();
+
 
         // Start periodic logging
         logTimerHandler.postDelayed(logTimerRunnable, 30000);
@@ -525,13 +526,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 rv = data.getBooleanExtra("FAKE_EVENTS", false);
                 if (rv != trs.mFakeEvents) {
                     if (rv == false) {
-                        stopFakeTimers();
                         trs.setFakeEvents(false);
+                        stopFakeTimers();
                     } else {
-                        if (trs.mFakeEvents && sw.getState() == Swe.State.RUNNING) {
-                            startFakeTimers();
-                        }
                         trs.setFakeEvents(true);
+                        startFakeTimers();
                     }
                 }
                 // Save preferences
@@ -1044,12 +1043,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Runnable fakeGpsTimerRunnable = new Runnable() {
         @Override
         public void run() {
+            fakeGpsTimerHandler.removeCallbacks(fakeGpsTimerRunnable);
+            fakeGpsTimerHandler.postDelayed(fakeGpsTimerRunnable, mFakeGpsInc);
             long t = System.currentTimeMillis();
-            mFakeGpsLat += mFakeGpsLatInc;
+            if (sw.state == Swe.State.RUNNING) {
+                // only move if running
+                mFakeGpsLat += mFakeGpsLatInc;
+            }
             sw.gps(mFakeGpsLat, -122.09, 2.0, (float) 3.062224, (float) 0.0, (float) 5.0, t);
             appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
             doTenths();
-            fakeGpsTimerHandler.postDelayed(fakeGpsTimerRunnable, mFakeGpsInc);
         }
     };
 
@@ -1058,10 +1061,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Runnable fakeLapTimerRunnable = new Runnable() {
         @Override
         public void run() {
+            fakeLapTimerHandler.removeCallbacks(fakeLapTimerRunnable);
+            fakeLapTimerHandler.postDelayed(fakeLapTimerRunnable, mFakeLapInc);
             long t = System.currentTimeMillis();
             sw.lap(t);
             appendLogCache(sw.getStringLogRec(Swe.LogRec.LAP));
-            fakeLapTimerHandler.postDelayed(fakeLapTimerRunnable, mFakeLapInc);
         }
     };
 
@@ -1070,21 +1074,35 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Runnable fakeStepTimerRunnable = new Runnable() {
         @Override
         public void run() {
-            long t = System.currentTimeMillis();
-            mFakeStepCount += 1;
-            sw.step(t, mFakeStepCount);
-            appendLogCache(sw.getStringLogRec(Swe.LogRec.STEP));
-            fakeStepTimerHandler.postDelayed(this, mFakeStepInc);
+            fakeStepTimerHandler.removeCallbacks(fakeStepTimerRunnable);
+            fakeStepTimerHandler.postDelayed(fakeStepTimerRunnable, mFakeStepInc);
+            if (sw.state == Swe.State.RUNNING) {
+                // only move if running
+                long t = System.currentTimeMillis();
+                mFakeStepCount += 1;
+                sw.step(t, mFakeStepCount);
+                appendLogCache(sw.getStringLogRec(Swe.LogRec.STEP));
+            }
         }
     };
 
     void startFakeTimers() {
         Log.d(TAG, "startFakeTimers()");
+        // remove any pending callbacks
+        fakeStepTimerHandler.removeCallbacks(fakeStepTimerRunnable);
+        fakeGpsTimerHandler.removeCallbacks(fakeGpsTimerRunnable);
+        fakeLapTimerHandler.removeCallbacks(fakeLapTimerRunnable);
+
+        // start gps timer if gps is enabled
         if (trs.mEnableGps) {
             fakeGpsTimerHandler.postDelayed(fakeGpsTimerRunnable, mFakeGpsInc);
         }
+
+        // always start step timer
         fakeStepTimerHandler.postDelayed(fakeStepTimerRunnable, mFakeStepInc);
-        if (trs.mCountLaps) {
+
+        // start lap timer if counting laps and if running
+        if (trs.mCountLaps && sw.state == Swe.State.RUNNING) {
             long curLapTime = sw.et-sw.lapTimeStart;
             long tv = mFakeGpsInc-curLapTime;
             if (tv < 0 || tv > mFakeLapInc) {
@@ -1096,9 +1114,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     void stopFakeTimers() {
         Log.d(TAG, "stopFakeTimers()");
-        fakeStepTimerHandler.removeCallbacks(fakeStepTimerRunnable);
-        fakeGpsTimerHandler.removeCallbacks(fakeGpsTimerRunnable);
+        // always stop lap timer
         fakeLapTimerHandler.removeCallbacks(fakeLapTimerRunnable);
+
+        // only stop step and gps timers is fake timers are disabled
+        if (trs.mFakeEvents) {
+            fakeStepTimerHandler.removeCallbacks(fakeStepTimerRunnable);
+            fakeGpsTimerHandler.removeCallbacks(fakeGpsTimerRunnable);
+        }
     }
 
 }
