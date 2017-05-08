@@ -77,14 +77,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     protected static final String TAG = "TrackRun";
 
-    long mFakeStepTimerInt = 10;
-    long mFakeStepInc = (1000*(9*60 + 30))/1462;
-    long mFakeGpsInc = 2000;
-    double mFakeStepCount = 0;
-    long mFakeStepTime, mNextFakeStepTime, mNextFakeGpsTime;
-    double mFakeGpsLat = 37.6;
-    double mFakeGpsLatInc = 0.000055;
-
     // my members
     public static Swe sw = new Swe();
     LapFragment mLapFragment;
@@ -128,32 +120,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void run() {
             doPeriodicLogging();
+            // todo would prefer this logs evey 30 seconds of elapsed time, not system time
             logTimerHandler.postDelayed(logTimerRunnable, 30000);
-        }
-    };
-
-    // timer for fake steps
-    Handler fakeStepTimerHandler = new Handler();
-    Runnable fakeStepTimerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            // 1/mFakeStepRate ms send step
-            // every 2000 ms send GPS update for 6.5 mph
-            long t = System.currentTimeMillis();
-            if (t >= mNextFakeStepTime) {
-                mFakeStepCount += 1;
-                sw.step(t, mFakeStepCount);
-                appendLogCache(sw.getStringLogRec(Swe.LogRec.STEP));
-                mNextFakeStepTime += mFakeStepInc;
-            }
-            if (t >= mNextFakeGpsTime) {
-                mFakeGpsLat += mFakeGpsLatInc;
-                sw.gps(mFakeGpsLat, -122.09, 2.0, (float) 3.062224, (float) 0.0, (float) 5.0, t);
-                appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
-                doTenths();
-                mNextFakeGpsTime += mFakeGpsInc;
-            }
-            fakeStepTimerHandler.postDelayed(this, mFakeStepTimerInt);
         }
     };
 
@@ -275,6 +243,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     if (trs.mEnableGps) {
                         appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
                     }
+                    if (trs.mFakeEvents) {
+                        startFakeTimers();
+                    }
                 } else if (sw.getState() == Swe.State.RUNNING) {
                     // Lap pressed
                     if (sw.getLapTimeCur() >= 8.0) {sw.lap(System.currentTimeMillis());
@@ -294,6 +265,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     appendLogCache(sw.getStringLogRec(Swe.LogRec.RESUME));
                     if (trs.mEnableGps) {
                         appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
+                    }
+                    if (trs.mFakeEvents) {
+                        startFakeTimers();
                     }
                 }
                 if (mAverageFragment != null){
@@ -325,11 +299,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         // Start fake event timer
-        if (trs.mFakeEvents) {
-            mFakeStepTime = System.currentTimeMillis();
-            mNextFakeGpsTime = mFakeStepTime + mFakeGpsInc;
-            mNextFakeStepTime = mFakeStepTime + mFakeStepInc;
-            fakeStepTimerHandler.postDelayed(fakeStepTimerRunnable, 0);
+        if (trs.mFakeEvents && sw.getState() == Swe.State.RUNNING) {
+            startFakeTimers();
         }
 
         // Start periodic logging
@@ -529,24 +500,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 trs.setStepsPerMile(data.getStringExtra("STEPS_PER_MILE"));
                 // todo Handle count laps/miles setting
                 trs.setCountLaps(data.getBooleanExtra("COUNT_LAPS", true));
-                // Handle fake events setting
-                boolean rv = data.getBooleanExtra("FAKE_EVENTS", false);
-                if (rv != trs.mFakeEvents) {
-                    if (rv == false) {
-                        // disable fake events
-                        fakeStepTimerHandler.removeCallbacks(fakeStepTimerRunnable);
-                        trs.setFakeEvents(false);
-                    } else {
-                        //enable fake events
-                        mFakeStepTime = System.currentTimeMillis();
-                        mNextFakeGpsTime = mFakeStepTime + mFakeGpsInc;
-                        mNextFakeStepTime = mFakeStepTime + mFakeStepInc;
-                        fakeStepTimerHandler.postDelayed(fakeStepTimerRunnable, 0);
-                        trs.setFakeEvents(true);
-                    }
-                }
                 // todo Handle enable/disable GPS
-                rv = data.getBooleanExtra("ENABLE_GPS", false);
+                boolean rv = data.getBooleanExtra("ENABLE_GPS", false);
                 if (rv != trs.mEnableGps) {
                     // GPS setting was updated
                     if (rv == false) {
@@ -564,6 +519,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             Toast.makeText(this, "Can't enable GPS, check permission",
                                     Toast.LENGTH_LONG).show();
                         }
+                    }
+                }
+                // Handle fake events setting
+                rv = data.getBooleanExtra("FAKE_EVENTS", false);
+                if (rv != trs.mFakeEvents) {
+                    if (rv == false) {
+                        stopFakeTimers();
+                        trs.setFakeEvents(false);
+                    } else {
+                        if (trs.mFakeEvents && sw.getState() == Swe.State.RUNNING) {
+                            startFakeTimers();
+                        }
+                        trs.setFakeEvents(true);
                     }
                 }
                 // Save preferences
@@ -665,6 +633,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
+        }
+        if (trs.mFakeEvents) {
+            stopFakeTimers();
         }
     }
 
@@ -812,6 +783,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onLocationChanged(Location l) {
+        if (trs.mFakeEvents) return;
         Log.d(TAG, "onLocationChanged()");
         sw.gps(l.getLatitude(), l.getLongitude(),l.getAltitude(), l.getSpeed(), l.getBearing(),
                 l.getAccuracy(), l.getTime());
@@ -823,6 +795,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     protected void getLocation() {
+        if (trs.mFakeEvents) return;
         Log.d(TAG, "getLocation()");
         try {
             Location l = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
@@ -1052,6 +1025,80 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } else {
             Log.d(TAG, "clearLogCache() could not delete cache file");
         }
+    }
+
+    /*
+     * Fields and methods for the fake timers
+     */
+
+    // todo move all the fake time things to methods, start/pause/stop timers based on sw state
+    long mFakeStepInc = (1000*(9*60 + 30))/1462;
+    long mFakeGpsInc = 2000;
+    double mFakeStepCount = 0;
+    double mFakeGpsLat = 37.6;
+    double mFakeGpsLatInc = 0.000055;
+    long mFakeLapInc = 42400;
+
+    // timer for fake gps
+    Handler fakeGpsTimerHandler = new Handler();
+    Runnable fakeGpsTimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long t = System.currentTimeMillis();
+            mFakeGpsLat += mFakeGpsLatInc;
+            sw.gps(mFakeGpsLat, -122.09, 2.0, (float) 3.062224, (float) 0.0, (float) 5.0, t);
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.GPS));
+            doTenths();
+            fakeGpsTimerHandler.postDelayed(fakeGpsTimerRunnable, mFakeGpsInc);
+        }
+    };
+
+    // timer for fake laps
+    Handler fakeLapTimerHandler = new Handler();
+    Runnable fakeLapTimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long t = System.currentTimeMillis();
+            sw.lap(t);
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.LAP));
+            fakeLapTimerHandler.postDelayed(fakeLapTimerRunnable, mFakeLapInc);
+        }
+    };
+
+    // timer for fake steps
+    Handler fakeStepTimerHandler = new Handler();
+    Runnable fakeStepTimerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            long t = System.currentTimeMillis();
+            mFakeStepCount += 1;
+            sw.step(t, mFakeStepCount);
+            appendLogCache(sw.getStringLogRec(Swe.LogRec.STEP));
+            fakeStepTimerHandler.postDelayed(this, mFakeStepInc);
+        }
+    };
+
+    void startFakeTimers() {
+        Log.d(TAG, "startFakeTimers()");
+        if (trs.mEnableGps) {
+            fakeGpsTimerHandler.postDelayed(fakeGpsTimerRunnable, mFakeGpsInc);
+        }
+        fakeStepTimerHandler.postDelayed(fakeStepTimerRunnable, mFakeStepInc);
+        if (trs.mCountLaps) {
+            long curLapTime = sw.et-sw.lapTimeStart;
+            long tv = mFakeGpsInc-curLapTime;
+            if (tv < 0 || tv > mFakeLapInc) {
+                tv = mFakeLapInc;
+            }
+            fakeLapTimerHandler.postDelayed(fakeLapTimerRunnable, tv);
+        }
+    }
+
+    void stopFakeTimers() {
+        Log.d(TAG, "stopFakeTimers()");
+        fakeStepTimerHandler.removeCallbacks(fakeStepTimerRunnable);
+        fakeGpsTimerHandler.removeCallbacks(fakeGpsTimerRunnable);
+        fakeLapTimerHandler.removeCallbacks(fakeLapTimerRunnable);
     }
 
 }
