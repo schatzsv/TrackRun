@@ -24,12 +24,12 @@ public class LocationFragment extends Fragment {
     TextView headingTv, speedTv, avgSpeedTv, gpsDistTv;
     TextView textView5, textView6;
 
-    Handler timerHandler = new Handler();
-    Runnable timerRunnable = new Runnable() {
+    Handler timerLocationFragmentHandler = new Handler();
+    Runnable timerLocationFragmentRunnable = new Runnable() {
         @Override
         public void run() {
             updateLocationDisplay();
-            timerHandler.postDelayed(this, 250);
+            timerLocationFragmentHandler.postDelayed(timerLocationFragmentRunnable, 250);
         }
     };
 
@@ -52,7 +52,7 @@ public class LocationFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.location_fragment, container, false);
-        Log.d("TrackRun", "LocationFragment.onCreate()");
+        Log.d("TrackRun", "LocationFragment.onCreateView()");
         headingTv = (TextView) rootView.findViewById(R.id.heading_tv);
         speedTv = (TextView) rootView.findViewById(R.id.speed_tv);
         avgSpeedTv = (TextView) rootView.findViewById(R.id.avgspeed_tv);
@@ -67,14 +67,14 @@ public class LocationFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Log.d("TrackRun", "LocationFragment.onResume()");
-        timerHandler.postDelayed(timerRunnable, 0);
+        timerLocationFragmentHandler.postDelayed(timerLocationFragmentRunnable, 0);
     }
 
     @Override
     public void onPause() {
         super.onPause();
         Log.d("TrackRun", "LocationFragment.onPause()");
-        timerHandler.removeCallbacks(timerRunnable);
+        timerLocationFragmentHandler.removeCallbacks(timerLocationFragmentRunnable);
     }
 
     public void updateLocationDisplay() {

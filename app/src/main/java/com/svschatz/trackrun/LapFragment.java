@@ -32,13 +32,13 @@ public class LapFragment extends Fragment {
     TextView stepRateTextView;
 
 
-    Handler timerHandler = new Handler();
-    Runnable timerRunnable = new Runnable() {
+    Handler timerLapFragmentHandler = new Handler();
+    Runnable timerLapFragmentRunnable = new Runnable() {
         @Override
         public void run() {
             MainActivity.sw.doTenths();
             updateLapDisplay();
-            timerHandler.postDelayed(this, 250);
+            timerLapFragmentHandler.postDelayed(timerLapFragmentRunnable, 250);
         }
     };
 
@@ -81,7 +81,7 @@ public class LapFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Log.d("TrackRun", "LapFragment.onResume()");
-        timerHandler.postDelayed(timerRunnable, 0);
+        timerLapFragmentHandler.postDelayed(timerLapFragmentRunnable, 0);
 
     }
 
@@ -89,7 +89,7 @@ public class LapFragment extends Fragment {
     public void onPause() {
         super.onPause();
         Log.d("TrackRun", "LapFragment.onPause()");
-        timerHandler.removeCallbacks(timerRunnable);
+        timerLapFragmentHandler.removeCallbacks(timerLapFragmentRunnable);
     }
 
     public void updateLapDisplay() {
@@ -128,5 +128,6 @@ public class LapFragment extends Fragment {
             stepCountTextView.setText("C " + MainActivity.sw.getStringStepCount());
             stepRateTextView.setText(MainActivity.sw.getStringTenthStepRate());
         }
+        rootView.invalidate();
     }
 }

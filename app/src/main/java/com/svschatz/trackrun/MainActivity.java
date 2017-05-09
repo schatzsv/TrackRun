@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     mButtonIsGreen = false;
                 }
             }
-            timerHandler.postDelayed(this, 100);
+            timerHandler.postDelayed(timerRunnable, 100);
         }
     };
 
@@ -250,7 +250,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     }
                 } else if (sw.getState() == Swe.State.RUNNING) {
                     // Lap pressed
-                    if (sw.getLapTimeCur() >= 8.0) {sw.lap(System.currentTimeMillis());
+                    if (sw.getLapTimeCur() >= 8.0) {
+                        sw.lap(System.currentTimeMillis());
                         setButton("Lap", Color.GREEN);
                         appendLogCache(sw.getStringLogRec(Swe.LogRec.LAP));
                     }
@@ -301,7 +302,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         // Start fake event timers
-        startFakeTimers();
+        if (trs.mFakeEvents) {
+            startFakeTimers();
+        }
 
 
         // Start periodic logging
@@ -1065,6 +1068,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             fakeLapTimerHandler.postDelayed(fakeLapTimerRunnable, mFakeLapInc);
             long t = System.currentTimeMillis();
             sw.lap(t);
+            setButton("Lap", Color.GREEN);
             appendLogCache(sw.getStringLogRec(Swe.LogRec.LAP));
         }
     };
@@ -1081,7 +1085,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 long t = System.currentTimeMillis();
                 mFakeStepCount += 1;
                 sw.step(t, mFakeStepCount);
-                appendLogCache(sw.getStringLogRec(Swe.LogRec.STEP));
+                //appendLogCache(sw.getStringLogRec(Swe.LogRec.STEP));
             }
         }
     };
@@ -1104,7 +1108,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // start lap timer if counting laps and if running
         if (trs.mCountLaps && sw.state == Swe.State.RUNNING) {
             long curLapTime = sw.et-sw.lapTimeStart;
-            long tv = mFakeGpsInc-curLapTime;
+            long tv = mFakeLapInc-curLapTime;
             if (tv < 0 || tv > mFakeLapInc) {
                 tv = mFakeLapInc;
             }
