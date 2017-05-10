@@ -73,9 +73,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         com.google.android.gms.location.LocationListener {
 
-    //todo put lat/lon, maybe all current gps data in to start/stop/resume
     //todo verify good gps on start, alert if not good gps (and gps is enabled)
-    //todo don't display Infinity or NaN on log/average/location sreens
+    //todo don't display Infinity or NaN on log/average/location screens
+    //todo TrackRun - make step and 30sec logging a setting
+    //todo TrackRun - stop should log as pause - there is not really a stop, only reset
+    //todo TrackRun - maybe stop menu should be pause and add a stop
+    //todo what is average display when counting miles
 
     protected static final String TAG = "TrackRun";
 
@@ -100,19 +103,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     static final int MY_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 9090;
 
     // timer
-    Handler timerHandler = new Handler();
-    Runnable timerRunnable = new Runnable() {
+    private final Handler timerHandler = new Handler();
+    private final Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
             long t = System.currentTimeMillis();
             sw.tick(t);
+            timerHandler.postDelayed(timerRunnable, 100);
             if (mButtonIsGreen) {
                 if (sw.getLapTimeCur() >= 8.0) {
                     b.setBackgroundColor(Color.LTGRAY);
                     mButtonIsGreen = false;
                 }
             }
-            timerHandler.postDelayed(timerRunnable, 100);
         }
     };
 
@@ -471,7 +474,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_stop) {
             onStopMenu();
-            appendLogCache(sw.getStringLogRec(Swe.LogRec.STOP));
             return true;
         } else if (id == R.id.action_savelog) {
             saveLogToGoogleDrive();
@@ -625,14 +627,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             return; //do nothing if already stopped
         }
         sw.pause(System.currentTimeMillis());
+        appendLogCache(sw.getStringLogRec(Swe.LogRec.STOP));
         timerHandler.removeCallbacks(timerRunnable);
         setButton("Resume", Color.LTGRAY);
         if (mLapFragment != null) {
             mLapFragment.updateLapDisplay();
         }
-        if (mAverageFragment != null){
-            mAverageFragment.updateAverageDisplay();
-        }
+        //todo problem here is what should average show, last lap, tenth, or current?
+        //if (mAverageFragment != null){
+        //    mAverageFragment.updateAverageDisplay();
+        //}
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
@@ -647,6 +651,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (sw.getState() == Swe.State.RUNNING) {
             timerHandler.removeCallbacks(timerRunnable);
         }
+        stopFakeTimers();
         // initialize display and sw values
         sw.reset(System.currentTimeMillis());
         setButton("Start", Color.LTGRAY);
@@ -1068,6 +1073,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             fakeLapTimerHandler.postDelayed(fakeLapTimerRunnable, mFakeLapInc);
             long t = System.currentTimeMillis();
             sw.lap(t);
+            if (mAverageFragment != null) {
+                mAverageFragment.updateAverageDisplay();
+            }
             setButton("Lap", Color.GREEN);
             appendLogCache(sw.getStringLogRec(Swe.LogRec.LAP));
         }

@@ -116,15 +116,15 @@ public class Swe {
         laps.clear();
 
         //gps related
-        // todo - should these be cleared on reset?
         gpsDistanceRun = (float) 0.0;
-        gpsLatLast = 0.0;
-        gpsLonLast = 0.0;
-        gpsAltLast = 0.0;
-        gpsSpdLast = (float) 0.0;
-        gpsHdgLast = (float) 0.0;
-        gpsAccLast = (float) 0.0;
-        gpsTimeLast = 0;
+        // todo - should lastGps fields be cleared on reset?
+        //gpsLatLast = 0.0;
+        //gpsLonLast = 0.0;
+        //gpsAltLast = 0.0;
+        //gpsSpdLast = (float) 0.0;
+        //gpsHdgLast = (float) 0.0;
+        //gpsAccLast = (float) 0.0;
+        //gpsTimeLast = 0;
 
         //tenth mile related
         tenthCurDistance = 0.0;
@@ -317,6 +317,9 @@ public class Swe {
     }
 
     public String getStringAvgGpsSpeed() {
+        if (et == 0 || gpsDistanceRun == 0.0) {
+            return "0.00";
+        }
         double ags = gpsDistanceRun / et * 3600000.0;
         return String.format("%5.2f", ags);
     }
@@ -497,14 +500,15 @@ public class Swe {
 
     public Map<String, String> getInternalState() {
         Map<String, String> m = new HashMap<String, String>();
-        m.put("ver", "0.8");
+        m.put("ver", "0.9");
         m.put("state", Integer.toString(state));
         m.put("et", Long.toString(et));
         m.put("ctLast", Long.toString(ctLast));
         m.put("stepsCount", Double.toString(stepsCount));
         m.put("stepsCountLast", Double.toString(stepsCountLast));
         m.put("stepsTimeLastUpdate", Long.toString(stepsTimeLastUpdate));
-        m.put("stepsUpdated", Boolean.toString(stepsUpdated));
+        //removed because on restart the step sensor may have different number
+        //m.put("stepsUpdated", Boolean.toString(stepsUpdated));
         m.put("stepsLapStart", Double.toString(stepsLapStart));
         m.put("stepsLastLap", Double.toString(stepsLastLap));
         m.put("stepsSpmCur", Double.toString(stepsSpmCur));
@@ -549,14 +553,15 @@ public class Swe {
 
     public boolean setInternalState(Map<String, String> m) {
         if (!m.containsKey("ver")) return false;
-        if (!m.get("ver").contentEquals("0.8")) return false;
+        if (!m.get("ver").contentEquals("0.9")) return false;
         state = Integer.valueOf(m.get("state"));
         et = Long.valueOf(m.get("et"));
         ctLast = Long.valueOf(m.get("ctLast"));
         stepsCount = Double.valueOf(m.get("stepsCount"));
         stepsCountLast = Double.valueOf(m.get("stepsCountLast"));
         stepsTimeLastUpdate = Long.valueOf(m.get("stepsTimeLastUpdate"));
-        stepsUpdated = Boolean.valueOf(m.get("stepsUpdated"));
+        //removed because on restart the step sensor may have different number
+        //stepsUpdated = Boolean.valueOf(m.get("stepsUpdated"));
         stepsLapStart = Double.valueOf(m.get("stepsLapStart"));
         stepsSpmCur = Double.valueOf(m.get("stepsSpmCur"));
         stepsLastLap = Double.valueOf(m.get("stepsLastLap"));
@@ -643,14 +648,38 @@ public class Swe {
                         + ",,,"
                         + lapCount + "," + getLapTimeLast() + "," + stepsLastLap + "\n";
             case LogRec.START:
+                if (MainActivity.trs.mEnableGps) {
+                    return "Start,"
+                            + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                            + getDistance() + "," + et + "," + stepsCount + "," +
+                            ",,," + gpsLatLast + "," + gpsLonLast + ","
+                            + gpsAltLast + "," + gpsSpdLast + "," + gpsHdgLast + ","
+                            + gpsAccLast + "," + gpsTimeLast + "\n";
+                }
                 return "Start,"
                         + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
                         + getDistance() + "," + et + "," + stepsCount + "\n";
             case LogRec.RESUME:
+                if (MainActivity.trs.mEnableGps) {
+                    return "Resume,"
+                            + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                            + getDistance() + "," + et + "," + stepsCount + "," +
+                            ",,," + gpsLatLast + "," + gpsLonLast + ","
+                            + gpsAltLast + "," + gpsSpdLast + "," + gpsHdgLast + ","
+                            + gpsAccLast + "," + gpsTimeLast + "\n";
+                }
                 return "Resume,"
                         + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
                         + getDistance() + "," + et + "," + stepsCount + "\n";
             case LogRec.STOP:
+                if (MainActivity.trs.mEnableGps) {
+                    return "Stop,"
+                            + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
+                            + getDistance() + "," + et + "," + stepsCount + "," +
+                            ",,," + gpsLatLast + "," + gpsLonLast + ","
+                            + gpsAltLast + "," + gpsSpdLast + "," + gpsHdgLast + ","
+                            + gpsAccLast + "," + gpsTimeLast + "\n";
+                }
                 return "Stop,"
                         + new SimpleDateFormat("yyyyMMdd,HH:mm:ss,", Locale.US).format(new Date())
                         + getDistance() + "," + et + "," + stepsCount + "\n";

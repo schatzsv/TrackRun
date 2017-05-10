@@ -32,8 +32,8 @@ public class LapFragment extends Fragment {
     TextView stepRateTextView;
 
 
-    Handler timerLapFragmentHandler = new Handler();
-    Runnable timerLapFragmentRunnable = new Runnable() {
+    private final Handler timerLapFragmentHandler = new Handler();
+    private final Runnable timerLapFragmentRunnable = new Runnable() {
         @Override
         public void run() {
             MainActivity.sw.doTenths();
@@ -128,6 +128,5 @@ public class LapFragment extends Fragment {
             stepCountTextView.setText("C " + MainActivity.sw.getStringStepCount());
             stepRateTextView.setText(MainActivity.sw.getStringTenthStepRate());
         }
-        rootView.invalidate();
     }
 }

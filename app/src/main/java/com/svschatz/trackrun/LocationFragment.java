@@ -24,8 +24,8 @@ public class LocationFragment extends Fragment {
     TextView headingTv, speedTv, avgSpeedTv, gpsDistTv;
     TextView textView5, textView6;
 
-    Handler timerLocationFragmentHandler = new Handler();
-    Runnable timerLocationFragmentRunnable = new Runnable() {
+    private final Handler timerLocationFragmentHandler = new Handler();
+    private final Runnable timerLocationFragmentRunnable = new Runnable() {
         @Override
         public void run() {
             updateLocationDisplay();
