@@ -74,11 +74,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         com.google.android.gms.location.LocationListener {
 
     //todo verify good gps on start, alert if not good gps (and gps is enabled)
-    //todo don't display Infinity or NaN on log/average/location screens
     //todo TrackRun - make step and 30sec logging a setting
     //todo TrackRun - stop should log as pause - there is not really a stop, only reset
     //todo TrackRun - maybe stop menu should be pause and add a stop
     //todo what is average display when counting miles
+    //todo color fields is lap time, avg lap time is better
 
     protected static final String TAG = "TrackRun";
 
@@ -125,7 +125,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void run() {
             doPeriodicLogging();
-            // todo would prefer this logs evey 30 seconds of elapsed time, not system time
             logTimerHandler.postDelayed(logTimerRunnable, 30000);
         }
     };
@@ -251,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     if (trs.mFakeEvents) {
                         startFakeTimers();
                     }
+                    start30SecLogging();
                 } else if (sw.getState() == Swe.State.RUNNING) {
                     // Lap pressed
                     if (sw.getLapTimeCur() >= 8.0) {
@@ -275,6 +275,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     if (trs.mFakeEvents) {
                         startFakeTimers();
                     }
+                    start30SecLogging();
                 }
                 if (mAverageFragment != null){
                     mAverageFragment.updateAverageDisplay();
@@ -311,7 +312,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
         // Start periodic logging
-        logTimerHandler.postDelayed(logTimerRunnable, 30000);
+        if (sw.state == Swe.State.RUNNING) {
+            start30SecLogging();
+        }
     }
 
     @Override
@@ -627,8 +630,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             return; //do nothing if already stopped
         }
         sw.pause(System.currentTimeMillis());
-        appendLogCache(sw.getStringLogRec(Swe.LogRec.STOP));
         timerHandler.removeCallbacks(timerRunnable);
+        stop30SecLogging();
+        if (trs.mFakeEvents) {
+            stopFakeTimers();
+        }
+        appendLogCache(sw.getStringLogRec(Swe.LogRec.STOP));
         setButton("Resume", Color.LTGRAY);
         if (mLapFragment != null) {
             mLapFragment.updateLapDisplay();
@@ -640,9 +647,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (mLocationFragment != null) {
             mLocationFragment.updateLocationDisplay();
         }
-        if (trs.mFakeEvents) {
-            stopFakeTimers();
-        }
     }
 
     public void onResetMenu() {
@@ -651,6 +655,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (sw.getState() == Swe.State.RUNNING) {
             timerHandler.removeCallbacks(timerRunnable);
         }
+        start30SecLogging();
         stopFakeTimers();
         // initialize display and sw values
         sw.reset(System.currentTimeMillis());
@@ -989,6 +994,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     void doPeriodicLogging() {
         appendLogCache(sw.getStringLogRec(Swe.LogRec.SEC30));
+    }
+
+    void start30SecLogging() {
+        //set call timer at next 30 sec interval of et
+        long i = 30000 - sw.et % 30000;
+        if (i < 100) i = 30000;
+        logTimerHandler.postDelayed(logTimerRunnable, i);
+    }
+
+    void stop30SecLogging() {
+        logTimerHandler.removeCallbacks(logTimerRunnable);
     }
 
     /*

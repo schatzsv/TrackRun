@@ -446,6 +446,9 @@ public class Swe {
     }
 
     public String getStringAvgStepsPerMile() {
+        if (getLaps() == 0) {
+            return "pM 0";
+        }
         return String.format("pM %,d", Math.round(stepsLapStart/(getLaps()/trs.mLapsPerMile)));
     }
 
@@ -628,12 +631,7 @@ public class Swe {
                     return "";
                 }
             case LogRec.SEC30:
-                if (state == State.RUNNING) {
-                    return "30Sec,,," + getDistance() + ","
-                            + et + "," + stepsCount + "\n";
-                } else {
-                    return "";
-                }
+                return "30Sec,,," + getDistance() + "," + et + "," + stepsCount + "\n";
             case LogRec.TENTH:
                 return "Tenth,,,"
                         + tenthCumDistance + ","
