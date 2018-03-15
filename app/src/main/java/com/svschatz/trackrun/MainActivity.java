@@ -1038,7 +1038,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     void saveLogToGoogleDrive() {
+
         saveLog(logFile);
+        Toast.makeText(this, "Saved run to Google Drive", Toast.LENGTH_LONG).show();
     }
 
     void clearLogCache() {

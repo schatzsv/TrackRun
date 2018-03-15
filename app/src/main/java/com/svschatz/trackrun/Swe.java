@@ -305,7 +305,7 @@ public class Swe {
     }
 
     public String getStringTenthStepRate() {
-        return String.format("%.1f", tenthCurStepRate);
+        return String.format("%.1f", tenthCurStepRate/2.0);
     }
 
     public String getStringGpsHeading() {
@@ -422,7 +422,7 @@ public class Swe {
     }
 
     public String getStringStepRate() {
-        return String.format("R %.1f", stepsSpmLastLap);
+        return String.format("R %.1f", stepsSpmLastLap/2.0);
     }
 
     public String getStringLastMph() {
@@ -430,7 +430,7 @@ public class Swe {
     }
 
     public String getStringAvgSpm() {
-        return String.format("pm %.1f", stepsSpmAvg);
+        return String.format("pm %.1f", stepsSpmAvg/2.0);
     }
 
     public String getStringAvgStepLength() {
